@@ -12,30 +12,14 @@
 	import { goto } from '$app/navigation';
 	import { authStore } from '$lib/stores/auth.svelte';
 
-	// Helper functions
 	function extractErrorMessage(error: any): string {
 		if (typeof error === 'object' && error !== null) {
-			if ('message' in error && typeof error.message === 'string') {
-				return error.message;
-			}
-			if ('detail' in error && typeof error.detail === 'string') {
-				return error.detail;
-			}
-			if ('errors' in error && Array.isArray(error.errors) && error.errors[0]?.msg) {
+			if ('message' in error && typeof error.message === 'string') return error.message;
+			if ('detail' in error && typeof error.detail === 'string') return error.detail;
+			if ('errors' in error && Array.isArray(error.errors) && error.errors[0]?.msg)
 				return error.errors[0].msg;
-			}
 		}
 		return 'Invalid credentials or server error';
-	}
-
-	function createFormError(form: any, message: string) {
-		return {
-			form: {
-				...form,
-				valid: false,
-				errors: { username: [message] }
-			}
-		};
 	}
 
 	async function handleLoginSuccess(loginData: any, meData: any) {
@@ -49,7 +33,7 @@
 			last_login_date: meData.last_login_date,
 			created_at: meData.created_at
 		});
-		await goto('/').catch(console.error);
+		await goto('/');
 	}
 
 	const form = superForm(defaults(zod4(loginSchema)), {
@@ -62,57 +46,32 @@
 				return;
 			}
 
-			// Use toast.promise for the entire login process
-			try {
-				await toast.promise(
-					(async () => {
-						console.log('Form is valid:', form.data);
+			await toast.promise(
+				(async () => {
+					const { data: loginData, error: loginError } = await client.POST('/v1/auth/login', {
+						body: { ...form.data, platform: 'web' }
+					});
 
-						// Login request
-						const { data: loginData, error: loginError } = await client.POST('/v1/auth/login', {
-							body: { ...form.data, platform: 'web' }
-						});
-						console.log('Login response:', { data: loginData, error: loginError });
-
-						if (loginError) {
-							console.error('Login error details:', loginError);
-							const message = extractErrorMessage(loginError);
-							throw new Error(message);
-						}
-
-						if (!loginData) {
-							throw new Error('No login data received');
-						}
-
-						reset();
-
-						// Get user profile
-						const { data: meData } = await client.GET('/v1/users/me', {
-							headers: { Authorization: `Bearer ${loginData.access_token}` }
-						});
-						console.log('Me response:', { me: meData });
-
-						if (!meData) {
-							throw new Error('Failed to retrieve user data');
-						}
-
-						await handleLoginSuccess(loginData, meData);
-						return 'Login successful!';
-					})(),
-					{
-						loading: 'Logging in...',
-						success: (message) => message,
-						error: (err) => {
-							console.error('Login error:', err);
-							return err instanceof Error ? err.message : 'Login failed';
-						}
+					if (loginError) {
+						throw new Error(extractErrorMessage(loginError));
 					}
-				);
-			} catch (err) {
-				// Handle form error after toast.promise
-				const message = err instanceof Error ? err.message : 'Login failed';
-				return createFormError(form, message);
-			}
+					if (!loginData) throw new Error('No login data received');
+
+					reset();
+
+					const { data: meData } = await client.GET('/v1/users/me', {
+						headers: { Authorization: `Bearer ${loginData.access_token}` }
+					});
+					if (!meData) throw new Error('Failed to retrieve user data');
+
+					await handleLoginSuccess(loginData, meData);
+				})(),
+				{
+					loading: 'Logging in...',
+					success: 'Login successful!',
+					error: (err) => (err instanceof Error ? err.message : 'Login failed')
+				}
+			);
 		}
 	});
 	const { form: formData, submitting, reset } = form;
@@ -121,7 +80,7 @@
 <Card.Root class="mx-auto w-full max-w-sm">
 	<Card.Header>
 		<Card.Title class="text-2xl">Login</Card.Title>
-		<Card.Description>Enter your email below to login to your account</Card.Description>
+		<Card.Description>Enter your credentials to access your account</Card.Description>
 	</Card.Header>
 	<Card.Content>
 		<form method="POST" use:form.enhance>

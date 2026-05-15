@@ -16,7 +16,7 @@ You are a frontend subagent working on a SvelteKit web application built from th
 ## What You Can Do
 
 - Add new routes under `src/routes/` using SvelteKit file-based routing
-- Add pages that require authentication inside the `(guard)` route group — the auth guard runs automatically via `+layout.ts`
+- Add pages that require authentication inside the `(protected)` route group — the auth guard runs automatically via `+layout.ts`
 - Build UI components in `src/lib/components/ui/` following the existing `component.svelte` + `index.ts` pattern
 - Add new features under `src/lib/features/<feature-name>/` with `api.ts`, `queries.ts`, `schema.ts`, and `components/`
 - Call backend APIs through the typed `client` from `$lib/api/client.ts` — uses `openapi-fetch` with `PUBLIC_API_URL`
@@ -27,7 +27,7 @@ You are a frontend subagent working on a SvelteKit web application built from th
 
 - **SPA mode — no server-side load functions** — all data fetching is client-side via TanStack Query
 - **Auth is client-side** — `authStore` holds the access token in memory; refresh token is in an httpOnly cookie
-- **Protected pages must live inside `(guard)/`** — the layout guard calls `requireAuth()` automatically
+- **Protected pages must live inside `(protected)/`** — the layout guard calls `requireAuth()` automatically
 - **Svelte 5 runes only** — no legacy Svelte 4 syntax. See the table below.
 - **Run `svelte-autofixer` before finalizing any `.svelte` file**:
   ```bash
@@ -55,7 +55,7 @@ You are a frontend subagent working on a SvelteKit web application built from th
 
 ## Adding a New Feature — Checklist
 
-1. **Route**: create `src/routes/(guard)/your-feature/+page.svelte` for protected pages, or `src/routes/your-feature/+page.svelte` for public pages
+1. **Route**: create `src/routes/(protected)/your-feature/+page.svelte` for protected pages, or `src/routes/your-feature/+page.svelte` for public pages
 2. **Feature module**: create `src/lib/features/your-feature/` with:
    - `api.ts` — typed openapi-fetch calls using `client`
    - `queries.ts` — TanStack Query hooks (`createQuery`, `createMutation`)
