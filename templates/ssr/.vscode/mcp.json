@@ -1,0 +1,13 @@
+{
+	"servers": {
+		"mcp-svelte-docs": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"mcp-svelte-docs"
+			],
+			"type": "stdio"
+		}
+	},
+	"inputs": []
+}
