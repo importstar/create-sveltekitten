@@ -1,23 +1,41 @@
-You are able to use the Svelte MCP server, where you have access to comprehensive Svelte 5 and SvelteKit documentation. Here's how to use the available tools effectively:
+# Agent Instructions — SSR Template
 
-## Available MCP Tools:
+## Start Here
+
+Before doing any work, read `agent-role.md` in this directory. It contains the full project context: tech stack, auth pattern, feature structure, key constraints, and a new-feature checklist.
+
+## Available Skills
+
+Three skills are installed in `.agents/skills/`. Use them via your skill system:
+
+- **svelte-core-bestpractices** — Svelte 5 runes patterns, snippets, reactivity rules. Use whenever writing or reviewing `.svelte` files.
+- **svelte-code-writer** — Opinionated code generation for Svelte 5. Use when scaffolding new components or routes.
+- **shadcn-svelte** — Pre-built shadcn-svelte component catalog. Use when adding UI components from `src/lib/components/ui/`.
+
+## Svelte MCP Tools
+
+You have access to the Svelte MCP server for live Svelte 5 / SvelteKit documentation.
 
 ### 1. list-sections
-
-Use this FIRST to discover all available documentation sections. Returns a structured list with titles, use_cases, and paths.
-When asked about Svelte or SvelteKit topics, ALWAYS use this tool at the start of the chat to find relevant sections.
+Use this FIRST to discover available documentation sections.
+When asked about Svelte or SvelteKit topics, ALWAYS call this before answering.
 
 ### 2. get-documentation
-
-Retrieves full documentation content for specific sections. Accepts single or multiple sections.
-After calling the list-sections tool, you MUST analyze the returned documentation sections (especially the use_cases field) and then use the get-documentation tool to fetch ALL documentation sections that are relevant for the user's task.
+Fetches full documentation for specific sections.
+After `list-sections`, fetch ALL sections relevant to the task — especially check `use_cases`.
 
 ### 3. svelte-autofixer
-
-Analyzes Svelte code and returns issues and suggestions.
-You MUST use this tool whenever writing Svelte code before sending it to the user. Keep calling it until no issues or suggestions are returned.
+Analyzes Svelte code for issues and suggestions.
+You MUST run this on every `.svelte` file before delivering it. Keep calling until no issues remain.
 
 ### 4. playground-link
+Generates a Svelte Playground link.
+Only call after user confirms they want one. NEVER call if code was written to project files.
 
-Generates a Svelte Playground link with the provided code.
-After completing the code, ask the user if they want a playground link. Only call this tool after user confirmation and NEVER if code was written to files in their project.
+## SSR-Specific Notes
+
+- Auth is **server-side**: cookies → `hooks.server.ts` → `event.locals.fastapiClient`
+- Protected pages go inside `src/routes/(protected)/` — the auth guard runs automatically via `hooks.server.ts`
+- All API calls route through `/api/proxy/**` — never call the backend directly from the browser
+- Use `event.locals.fastapiClient` in server load/actions; use the `fastapiClient` default export client-side
+- Logger: `import { logger } from '$lib/logger'` — use instead of `console.log`
