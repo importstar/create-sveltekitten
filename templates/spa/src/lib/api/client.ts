@@ -1,6 +1,7 @@
 import createClient from 'openapi-fetch';
 import type { paths } from './openapi';
 import { PUBLIC_API_URL } from '$env/static/public';
+import { authStore } from '$lib/stores/auth.svelte';
 
 // Define a clear type for the SvelteKit event object for server-side usage.
 type ServerEvent = {
@@ -17,6 +18,15 @@ export function createFastApiClient(event?: ServerEvent) {
 }
 
 const client = createFastApiClient();
+
+client.use({
+	async onRequest({ request }) {
+		if (authStore.accessToken) {
+			request.headers.set('Authorization', `${authStore.tokenType ?? 'Bearer'} ${authStore.accessToken}`);
+		}
+		return request;
+	}
+});
 
 export default client;
 
