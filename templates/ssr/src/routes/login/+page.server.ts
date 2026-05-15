@@ -4,9 +4,14 @@ import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { loginSchema } from '$lib/features/login/schema';
 import { logger, sanitize } from '$lib/logger';
-import { setAuthTokens } from '$lib/utils/auth';
+import { setAuthTokens, isTokenExpired } from '$lib/utils/auth';
 
-export const load = (async () => {
+export const load = (async ({ cookies }) => {
+	const refreshToken = cookies.get('refresh_token');
+	if (refreshToken && !isTokenExpired(refreshToken)) {
+		throw redirect(303, '/home');
+	}
+
 	const form = await superValidate(zod4(loginSchema));
 
 	return { form };
@@ -27,9 +32,8 @@ export const actions: Actions = {
 		try {
 			const result = await fastapiClient.POST('/v1/auth/login', {
 				body: {
-					email: form.data.email,
-					password: form.data.password,
-					remember_me: form.data.rememberMe ?? false
+					username: form.data.username,
+					password: form.data.password
 				}
 			});
 			logger.info(sanitize({ result: result }), 'Login Result');

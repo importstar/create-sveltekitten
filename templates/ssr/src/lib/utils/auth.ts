@@ -1,6 +1,15 @@
 import type { Cookies } from '@sveltejs/kit';
-import { createCookieOptions } from './cookies';
 import jwt from 'jsonwebtoken';
+
+function createCookieOptions(overrides: { maxAge?: number } = {}) {
+	return {
+		path: '/',
+		httpOnly: true,
+		sameSite: 'lax' as const,
+		secure: process.env.NODE_ENV === 'production',
+		...overrides
+	};
+}
 
 export function clearCookieTokens(cookies: Cookies) {
 	cookies.delete('access_token', createCookieOptions({ maxAge: 0 }));
@@ -9,7 +18,7 @@ export function clearCookieTokens(cookies: Cookies) {
 
 export function isProtectedRoute(path: string | null): boolean {
 	if (!path) return false;
-	return path.split('/').includes('(auth)');
+	return path.split('/').includes('(protected)');
 }
 
 export function isTokenExpired(token?: string, bufferTime = 300): boolean {

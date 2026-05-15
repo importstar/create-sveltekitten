@@ -5,12 +5,11 @@ export const handleAuthGuard: Handle = async ({ event, resolve }) => {
 	const { cookies, route } = event;
 	// ดึง refreshtoken จาก cookies
 	if (isProtectedRoute(route.id)) {
-		const refreshToken = cookies.get('refreshtoken');
+		const refreshToken = cookies.get('refresh_token');
 		if (isTokenExpired(refreshToken)) {
 			clearCookieTokens(cookies);
 		}
 
-		// ถ้าไม่มี refreshtoken ให้ redirect ไปหน้า login
 		if (!refreshToken) {
 			return new Response(null, {
 				status: 303,

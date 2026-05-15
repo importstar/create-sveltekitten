@@ -24,7 +24,6 @@
 			if (event.result.type === 'redirect') {
 				toast.success('Login Success!!');
 				const endpoint = event.result.location;
-				console.log('Form submission result:', endpoint);
 				await goto(endpoint);
 			}
 			if (event.result.type === 'error') {
@@ -49,15 +48,15 @@
 	</Card.Header>
 	<Card.Content>
 		<form class="grid gap-4" method="POST" use:enhance>
-			<Form.Field {form} name="email">
+			<Form.Field {form} name="username">
 				<Form.Control>
 					{#snippet children({ props })}
-						<Form.Label>Email</Form.Label>
+						<Form.Label>Username</Form.Label>
 						<Input
 							{...props}
-							type="email"
-							placeholder="Enter your email"
-							bind:value={$formData.email}
+							type="text"
+							placeholder="Enter your username"
+							bind:value={$formData.username}
 						/>
 					{/snippet}
 				</Form.Control>

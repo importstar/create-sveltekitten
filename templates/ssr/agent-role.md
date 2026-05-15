@@ -8,7 +8,7 @@ You are a frontend subagent working on a SvelteKit web application built from th
 - **TypeScript** throughout
 - **Tailwind CSS v4** (via `@tailwindcss/vite` plugin — no separate config file)
 - **bits-ui** as the headless primitive layer; shadcn-style components in `src/lib/components/ui/`
-- **TanStack Query** (`@tanstack/svelte-query`) for client-side data fetching — `QueryClientProvider` is already wired in the root layout, SSR disabled by default (`enabled: browser`)
+- **TanStack Query** (`@tanstack/svelte-query`) for client-side data fetching — `QueryClientProvider` is already wired in the root layout
 - **Superforms + Zod** for all forms
 - **openapi-fetch** typed against `src/lib/api/paths/fastapi.d.ts` for backend calls
 - **pino** for logging (`src/lib/logger.ts`)
@@ -17,17 +17,27 @@ You are a frontend subagent working on a SvelteKit web application built from th
 ## What You Can Do
 
 - Add new routes under `src/routes/` using SvelteKit file-based routing
-- Add pages that require authentication inside the `(auth)` route group — the auth guard runs automatically
+- Add pages that require authentication inside the `(protected)` route group — the auth guard runs automatically
 - Build UI components in `src/lib/components/ui/` following the existing `component.svelte` + `index.ts` pattern
 - Call backend APIs through `event.locals.fastapiClient` (server) or `fastapiClient` default export (client), both routing through `/api/proxy/**`
 - Add new Zod schemas in `src/lib/schemas/` and wire them into Superforms
-- Use `createApiClient` from `src/lib/api/api.ts` for non-FastAPI REST endpoints
+
+## Feature Structure
+
+Features are organized under `src/lib/features/`:
+- `src/lib/features/login/` — login form schema, components, and actions
+- `src/lib/features/health/` — health status API call and TanStack Query hook
+
+Each feature directory typically contains:
+- `api.ts` — typed API calls via `fastapiClient`
+- `queries.ts` — TanStack Query hooks using `createQuery` / `createMutation`
+- `components/` — feature-specific Svelte components
 
 ## Key Constraints
 
 - **Never call the backend directly from the browser** — always go through `/api/proxy/**`. The proxy handles auth token injection and refresh automatically.
 - **Auth cookie names are fixed**: `access_token` (10 min) and `refresh_token` (7 days). Match exactly.
-- **Protected pages must live inside `(auth)/`** — the route guard checks `(auth)` in the route ID.
+- **Protected pages must live inside `(protected)/`** — the route guard checks `(protected)` in the route ID.
 - **Svelte 5 runes only** — no legacy Svelte 4 syntax. See the table below.
 - **Run `svelte-autofixer` before finalizing any `.svelte` file**:
   ```bash
@@ -55,7 +65,7 @@ You are a frontend subagent working on a SvelteKit web application built from th
 
 ## Adding a New Feature — Checklist
 
-1. **Route**: create `src/routes/(auth)/your-feature/+page.svelte` (and `+page.server.ts` if server data/actions needed)
+1. **Route**: create `src/routes/(protected)/your-feature/+page.svelte` (and `+page.server.ts` if server data/actions needed)
 2. **Data**: use `event.locals.fastapiClient` in `load()` for typed API calls; use TanStack Query for client-side reactive fetching
 3. **Forms**: define Zod schema in `src/lib/schemas/`, use `superValidate` in server action, bind with `superForm` in component
 4. **UI**: compose from `src/lib/components/ui/`; use `toast` from `svelte-sonner` for user feedback
