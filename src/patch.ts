@@ -1,7 +1,7 @@
 import * as p from '@clack/prompts';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { getApplicableCodemods } from './codemods/index.js';
 
 interface SveltekittenConfig {
@@ -45,15 +45,25 @@ export async function patch(latestVersion: string) {
 		file: string;
 		oldContent: string;
 		newContent: string;
+		isNew?: boolean;
 	}
 	const pending: PendingChange[] = [];
 
 	for (const codemod of applicable) {
 		p.log.step(`Codemod ${codemod.from} → ${codemod.to}`);
 		for (const t of codemod.transforms) {
+			if (t.template && t.template !== template) {
+				continue;
+			}
 			const filePath = join(process.cwd(), t.file);
 			if (!existsSync(filePath)) {
-				p.log.warn(`  skip ${t.file} (not found)`);
+				if (t.create) {
+					const newContent = t.transform('');
+					p.log.info(`  create ${t.file}`);
+					pending.push({ file: t.file, oldContent: '', newContent, isNew: true });
+				} else {
+					p.log.warn(`  skip ${t.file} (not found)`);
+				}
 				continue;
 			}
 			const oldContent = await readFile(filePath, 'utf-8');
@@ -81,9 +91,11 @@ export async function patch(latestVersion: string) {
 
 		const spinner = p.spinner();
 		spinner.start('Applying changes...');
-		for (const { file, newContent } of pending) {
-			await writeFile(join(process.cwd(), file), newContent);
-		}
+		for (const { file, newContent, isNew } of pending) {
+				const dest = join(process.cwd(), file);
+				if (isNew) await mkdir(dirname(dest), { recursive: true });
+				await writeFile(dest, newContent);
+			}
 		spinner.stop('Changes applied.');
 	}
 

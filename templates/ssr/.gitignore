@@ -27,3 +27,9 @@ src/lib/paraglide
 
 # openapi generated types
 src/lib/api/paths/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright/

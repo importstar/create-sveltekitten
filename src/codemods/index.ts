@@ -1,10 +1,15 @@
 import v0_1_1 from './v0.1.1';
 import v0_2_0 from './v0.2.0';
 import v0_2_1 from './v0.2.1';
+import v0_2_2 from './v0.2.2';
 
 export interface FileTransform {
 	/** Relative path from project root, e.g. "src/lib/auth.ts" */
 	file: string;
+	/** If true, create the file even when it doesn't exist yet (transform receives empty string). */
+	create?: boolean;
+	/** Restrict this transform to a specific template type. Skipped when template doesn't match. */
+	template?: 'ssr' | 'spa';
 	transform: (content: string) => string;
 }
 
@@ -15,7 +20,7 @@ export interface Codemod {
 }
 
 /** Add new version modules here in ascending order. */
-export const codemods: Codemod[] = [v0_1_1, v0_2_0, v0_2_1];
+export const codemods: Codemod[] = [v0_1_1, v0_2_0, v0_2_1, v0_2_2];
 
 function parseVersion(v: string): [number, number, number] {
 	const [major = 0, minor = 0, patch = 0] = v.split('.').map(Number);
