@@ -13,8 +13,7 @@
 	"scripts": {
 		"build": "tsc",
 		"dev": "tsx src/index.ts",
-		"prepare": "tsc",
-		"prepublishOnly": "pnpm build"
+"prepublishOnly": "pnpm build"
 	},
 	"engines": {
 		"node": ">=18"
