@@ -33,7 +33,7 @@
 			last_login_date: meData.last_login_date,
 			created_at: meData.created_at
 		});
-		await goto('/');
+		await goto('/home');
 	}
 
 	const form = superForm(defaults(zod4(loginSchema)), {
@@ -49,7 +49,7 @@
 			await toast.promise(
 				(async () => {
 					const { data: loginData, error: loginError } = await client.POST('/v1/auth/login', {
-						body: { ...form.data, platform: 'web' }
+						body: { ...form.data, strategy: 'cookies' }
 					});
 
 					if (loginError) {
