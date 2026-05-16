@@ -12,7 +12,10 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"openapi": "openapi-typescript http://localhost:9000/openapi.json -o ./src/lib/api/openapi.d.ts"
+		"openapi": "openapi-typescript",
+		"openapi:fetch": "mkdir -p src/libs/api-specs && curl -f http://localhost:9000/openapi.json -o src/libs/api-specs/fastapi.json",
+		"openapi:fastapi": "openapi-typescript src/libs/api-specs/fastapi.json -o src/lib/api/openapi.d.ts",
+		"openapi:update": "pnpm openapi:fetch && pnpm openapi:fastapi"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.1.0",
@@ -53,7 +56,6 @@
 		"@tanstack/svelte-query": "^6.1.29",
 		"@tanstack/svelte-query-devtools": "^6.1.29",
 		"jsonwebtoken": "^9.0.3",
-		"lucide-svelte": "^1.0.1",
 		"openapi-fetch": "^0.17.0",
 		"openapi-typescript": "^7.13.0"
 	}

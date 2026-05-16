@@ -6,7 +6,7 @@
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
-	import { LoaderCircle } from 'lucide-svelte';
+	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import FormDebug from '$lib/components/form/form-debug.svelte';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
