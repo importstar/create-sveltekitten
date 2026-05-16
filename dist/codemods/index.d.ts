@@ -1,0 +1,14 @@
+export interface FileTransform {
+    /** Relative path from project root, e.g. "src/lib/auth.ts" */
+    file: string;
+    transform: (content: string) => string;
+}
+export interface Codemod {
+    from: string;
+    to: string;
+    transforms: FileTransform[];
+}
+/** Add new codemods here in chronological order whenever a template bug is fixed. */
+export declare const codemods: Codemod[];
+/** Returns codemods that need to run to go from `currentVersion` to `targetVersion`. */
+export declare function getApplicableCodemods(currentVersion: string, targetVersion: string): Codemod[];

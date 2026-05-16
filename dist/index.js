@@ -4,8 +4,13 @@ import { cp, mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { patch } from './patch.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = join(__dirname, '../templates');
+async function getVersion() {
+    const pkg = JSON.parse(await readFile(join(__dirname, '../package.json'), 'utf-8'));
+    return pkg.version;
+}
 async function replaceInFile(filePath, replacements) {
     let content = await readFile(filePath, 'utf-8');
     for (const [from, to] of Object.entries(replacements)) {
@@ -115,6 +120,7 @@ async function main() {
             ? `PUBLIC_APP_TITLE=${projectName}\nBACKEND_API_URL=${backendUrl}\n`
             : `PUBLIC_APP_TITLE=${projectName}\nPUBLIC_API_URL=${backendUrl}\n`;
         await writeFile(join(targetDir, '.env'), envLines);
+        await writeFile(join(targetDir, '.sveltekitten.json'), JSON.stringify({ version: await getVersion(), template }, null, '\t') + '\n');
         spinner.stop('Project scaffolded!');
     }
     catch (err) {
@@ -131,7 +137,18 @@ async function main() {
     }
     p.outro('Happy coding!');
 }
-main().catch((err) => {
-    console.error(err);
-    process.exit(1);
-});
+const command = process.argv[2];
+if (command === 'patch') {
+    getVersion()
+        .then((v) => patch(v))
+        .catch((err) => {
+        console.error(err);
+        process.exit(1);
+    });
+}
+else {
+    main().catch((err) => {
+        console.error(err);
+        process.exit(1);
+    });
+}
