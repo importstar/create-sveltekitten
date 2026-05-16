@@ -10,6 +10,9 @@ export default defineConfig({
 	use: {
 		baseURL: 'http://localhost:4173',
 		trace: 'on-first-retry',
+		launchOptions: {
+			args: ['--no-sandbox', '--disable-setuid-sandbox'],
+		},
 	},
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 	webServer: {

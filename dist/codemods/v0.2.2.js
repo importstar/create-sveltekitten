@@ -11,6 +11,9 @@ export default defineConfig({
 \tuse: {
 \t\tbaseURL: 'http://localhost:3000',
 \t\ttrace: 'on-first-retry',
+\t\tlaunchOptions: {
+\t\t\targs: ['--no-sandbox', '--disable-setuid-sandbox'],
+\t\t},
 \t},
 \tprojects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 \twebServer: [
@@ -40,6 +43,9 @@ export default defineConfig({
 \tuse: {
 \t\tbaseURL: 'http://localhost:4173',
 \t\ttrace: 'on-first-retry',
+\t\tlaunchOptions: {
+\t\t\targs: ['--no-sandbox', '--disable-setuid-sandbox'],
+\t\t},
 \t},
 \tprojects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 \twebServer: {
