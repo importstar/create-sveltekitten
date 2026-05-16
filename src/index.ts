@@ -59,7 +59,8 @@ async function applyReplacements(targetDir: string, replacements: Record<string,
 }
 
 async function main() {
-	p.intro('create-sveltekitten');
+	const version = await getVersion();
+	p.intro(`create-sveltekitten v${version}`);
 
 	const projectName = await p.text({
 		message: 'Project name',
@@ -77,12 +78,12 @@ async function main() {
 			{
 				value: 'ssr',
 				label: 'SSR',
-				hint: 'adapter-node · server-side auth · proxy · pino logger'
+				hint: `v${version} · adapter-node · server-side auth · proxy · pino logger`
 			},
 			{
 				value: 'spa',
 				label: 'SPA',
-				hint: 'adapter-static · client-side auth · TanStack Query'
+				hint: `v${version} · adapter-static · client-side auth · TanStack Query`
 			}
 		]
 	});
@@ -158,7 +159,10 @@ async function main() {
 	if (template === 'ssr') {
 		p.note(
 			[
-				'Regenerate OpenAPI types after backend changes:',
+				'Fetch latest spec and regenerate types:',
+				'  pnpm openapi:update',
+				'',
+				'Or regenerate from committed spec only:',
 				'  pnpm openapi:fastapi'
 			].join('\n'),
 			'API types'
