@@ -5,7 +5,7 @@ Scaffold a SvelteKit project with opinionated defaults for SSR or SPA.
 ## Usage
 
 ```bash
-npx github:importstar/create-sveltekitten
+pnpx github:importstar/create-sveltekitten
 ```
 
 The CLI will prompt for:
