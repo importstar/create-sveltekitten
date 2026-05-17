@@ -24,6 +24,6 @@ test.describe('Login', () => {
 		await page.getByLabel('Username').fill(INVALID.username);
 		await page.getByLabel('Password').fill(INVALID.password);
 		await page.getByRole('button', { name: 'Login' }).click();
-		await expect(page.getByText('Login Failed')).toBeVisible();
+		await expect(page.getByText('Login Failed', { exact: true })).toBeVisible();
 	});
 });

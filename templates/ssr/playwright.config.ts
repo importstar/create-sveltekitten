@@ -30,6 +30,7 @@ export default defineConfig({
 			env: {
 				BACKEND_API_URL: 'http://localhost:9001',
 				NODE_ENV: 'test',
+				ORIGIN: 'http://localhost:3000',
 			},
 			timeout: 120_000,
 		},
