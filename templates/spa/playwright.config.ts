@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
@@ -15,9 +16,18 @@ export default defineConfig({
 		},
 	},
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-	webServer: {
-		command: 'pnpm build && pnpm preview',
-		url: 'http://localhost:4173',
-		reuseExistingServer: !process.env.CI,
-	},
+	webServer: [
+		{
+			command: 'node e2e/mock-api.js',
+			url: 'http://localhost:9001/v1/health',
+			reuseExistingServer: !process.env.CI,
+			timeout: 15_000,
+		},
+		{
+			command: 'pnpm preview',
+			url: 'http://localhost:4173',
+			reuseExistingServer: !process.env.CI,
+			timeout: 60_000,
+		},
+	],
 });

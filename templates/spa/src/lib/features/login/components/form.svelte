@@ -69,7 +69,7 @@
 				{
 					loading: 'Logging in...',
 					success: 'Login successful!',
-					error: (err) => (err instanceof Error ? err.message : 'Login failed')
+					error: () => 'Login Failed'
 				}
 			);
 		}
