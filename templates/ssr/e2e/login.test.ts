@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const VALID = { username: 'admin', password: 'secret' };
-const INVALID = { username: 'wrong', password: 'wrong' };
+const INVALID = { username: 'wrong', password: 'wrongpass' };
 
 test.describe('Login', () => {
 	test('shows login form', async ({ page }) => {

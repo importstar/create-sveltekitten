@@ -12,7 +12,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"test:e2e": "playwright test",
+		"test:e2e": "pnpm build && playwright test",
 		"openapi": "openapi-typescript",
 		"openapi:fetch": "mkdir -p src/libs/api-specs && curl -f http://localhost:9000/openapi.json -o src/libs/api-specs/fastapi.json",
 		"openapi:fastapi": "openapi-typescript src/libs/api-specs/fastapi.json -o src/lib/api/paths/fastapi.d.ts",
@@ -20,6 +20,7 @@
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.52.0",
+		"@types/node": "^22.0.0",
 		"@eslint/compat": "^2.1.0",
 		"@eslint/js": "^10.0.1",
 		"@internationalized/date": "^3.12.1",

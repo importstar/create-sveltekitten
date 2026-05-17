@@ -44,6 +44,12 @@ const server = createServer(async (req, res) => {
 		return;
 	}
 
+	if (req.method === 'GET' && req.url === '/v1/health') {
+		res.writeHead(200);
+		res.end(JSON.stringify({ status: 'ok' }));
+		return;
+	}
+
 	res.writeHead(404);
 	res.end(JSON.stringify({ detail: 'Not found' }));
 });

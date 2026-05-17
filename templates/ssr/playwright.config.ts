@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
@@ -18,14 +19,19 @@ export default defineConfig({
 	webServer: [
 		{
 			command: 'node e2e/mock-api.js',
-			url: 'http://localhost:9001',
+			url: 'http://localhost:9001/v1/health',
 			reuseExistingServer: !process.env.CI,
+			timeout: 15_000,
 		},
 		{
-			command: 'pnpm build && node build',
+			command: `${process.execPath} build`,
 			url: 'http://localhost:3000',
 			reuseExistingServer: !process.env.CI,
-			env: { BACKEND_API_URL: 'http://localhost:9001' },
+			env: {
+				BACKEND_API_URL: 'http://localhost:9001',
+				NODE_ENV: 'test',
+			},
+			timeout: 120_000,
 		},
 	],
 });

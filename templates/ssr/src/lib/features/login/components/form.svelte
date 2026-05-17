@@ -8,7 +8,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import FormDebug from '$lib/components/form/form-debug.svelte';
-	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 
 	type LoginFormProps = {
@@ -20,18 +19,16 @@
 	const form = superForm(superform, {
 		validators: zod4Client(loginSchema),
 		resetForm: false,
-		onResult: async (event) => {
-			if (event.result.type === 'redirect') {
+		onResult: async ({ result }) => {
+			if (result.type === 'redirect') {
 				toast.success('Login Success!!');
-				const endpoint = event.result.location;
-				await goto(endpoint);
 			}
-			if (event.result.type === 'error') {
+			if (result.type === 'error') {
 				toast.error('Login Error', {
 					description: 'An error occurred during login.'
 				});
 			}
-			if (event.result.type === 'failure') {
+			if (result.type === 'failure') {
 				toast.error('Login Failed', {
 					description: 'Please check your credentials and try again.'
 				});

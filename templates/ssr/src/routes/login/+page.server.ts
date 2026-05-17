@@ -42,10 +42,14 @@ export const actions: Actions = {
 				setAuthTokens(cookies, result.data.access_token, result.data.refresh_token);
 			} else {
 				logger.inspect('Login failed', result.error);
-				return message(form, {
-					type: 'error',
-					text: 'Login failed. Please check your credentials and try again.'
-				});
+				return message(
+					form,
+					{
+						type: 'error',
+						text: 'Login failed. Please check your credentials and try again.'
+					},
+					{ status: 400 }
+				);
 			}
 		} catch (err) {
 			logger.inspect('Login request failed', err);
