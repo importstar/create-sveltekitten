@@ -1,4 +1,4 @@
-import type { Codemod } from './index';
+import type { Codemod } from './index.js';
 
 const MOCK_JWT =
 	'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6OTk5OTk5OTk5OX0.fake';

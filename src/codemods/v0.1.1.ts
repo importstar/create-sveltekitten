@@ -1,4 +1,4 @@
-import type { Codemod } from './index';
+import type { Codemod } from './index.js';
 
 const codemod: Codemod = {
 	from: '0.1.0',

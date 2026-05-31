@@ -1,4 +1,4 @@
-import type { Codemod } from './index';
+import type { Codemod } from './index.js';
 
 // SSR home page rewritten to demonstrate both fetch patterns side by side.
 // +page.server.ts is new (no codemod needed — existing projects won't have it).
