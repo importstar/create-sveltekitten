@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as p from '@clack/prompts';
-import { cp, mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile, readdir, rename, unlink } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,6 +34,18 @@ async function walkDir(dir: string): Promise<string[]> {
 		}
 	}
 	return files;
+}
+
+/** npm omits `.gitignore` from packages; templates ship `_gitignore` instead. */
+async function materializeGitignore(targetDir: string) {
+	const underscore = join(targetDir, '_gitignore');
+	const dot = join(targetDir, '.gitignore');
+	if (!existsSync(underscore)) return;
+	if (existsSync(dot)) {
+		await unlink(underscore);
+	} else {
+		await rename(underscore, dot);
+	}
 }
 
 async function applyReplacements(targetDir: string, replacements: Record<string, string>) {
@@ -124,6 +136,7 @@ async function main() {
 
 		const templateDir = join(TEMPLATES_DIR, template as string);
 		await cp(templateDir, targetDir, { recursive: true, force: true });
+		await materializeGitignore(targetDir);
 
 		const replacements: Record<string, string> = {
 			'{{PROJECT_NAME}}': projectName as string,

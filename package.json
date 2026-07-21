@@ -1,6 +1,6 @@
 {
 	"name": "create-sveltekitten",
-	"version": "0.2.3",
+	"version": "0.2.4",
 	"type": "module",
 	"description": "Create a new SvelteKitten project (SSR or SPA)",
 	"bin": {
@@ -13,7 +13,7 @@
 	"scripts": {
 		"build": "tsc",
 		"dev": "tsx src/index.ts",
-		"prepublishOnly": "pnpm build"
+		"prepublishOnly": "pnpm build && node scripts/sync-template-gitignore.mjs"
 	},
 	"engines": {
 		"node": ">=18"
