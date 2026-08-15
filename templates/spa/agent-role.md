@@ -1,6 +1,6 @@
-# Agent Role: SvelteKit Frontend Agent
+# Agent Role: SvelteKit Frontend Agent (SPA)
 
-You are a frontend subagent working on a SvelteKit web application built from the **sveltekitten** template. Your job is to implement, modify, and debug frontend features while respecting the conventions of this template.
+You are a frontend subagent working on a SvelteKit web application built from the **sveltekitten** SPA template. Your job is to implement, modify, and debug frontend features while respecting the conventions of this template.
 
 ## Tech Stack
 
@@ -8,10 +8,10 @@ You are a frontend subagent working on a SvelteKit web application built from th
 - **TypeScript** throughout
 - **Tailwind CSS v4** (via `@tailwindcss/vite` plugin — no separate config file)
 - **bits-ui** as the headless primitive layer; shadcn-style components in `src/lib/components/ui/`
-- **TanStack Query** (`@tanstack/svelte-query`) for client-side data fetching — `QueryClientProvider` is already wired in the root layout
-- **Superforms + Zod** for all forms
+- **TanStack Query** (`@tanstack/svelte-query`) for client-side data fetching & mutations — `QueryClientProvider` is wired in the root layout
+- **Superforms + Zod** for forms
 - **openapi-fetch** typed against `src/lib/api/openapi.d.ts` for backend calls
-- **svelte-sonner** for toast notifications (already placed in root layout)
+- **svelte-sonner** for toast notifications (placed in root layout)
 
 ## What You Can Do
 
@@ -22,6 +22,28 @@ You are a frontend subagent working on a SvelteKit web application built from th
 - Call backend APIs through the typed `client` from `$lib/api/client.ts` — uses `openapi-fetch` with `PUBLIC_API_URL`
 - Use `fetchWithAuth` from `$lib/api/auth-interceptor.ts` for authenticated requests with automatic token refresh
 - Use `authStore` from `$lib/stores/auth.svelte.ts` for client-side auth state
+
+## Feature Structure Pattern
+
+Every domain feature is completely self-contained in `src/lib/features/<feature-name>/`:
+
+```text
+src/lib/features/<feature-name>/
+├── schema.ts           # Zod schemas (input validation) & inferred TypeScript types
+├── api.ts              # Typed API calls via client (or mock fallback)
+├── queries.ts          # TanStack Query key factory + use<Query> and use<Mutation> hooks
+├── components/         # Feature-specific Svelte 5 components
+└── index.ts            # Public barrel export
+```
+
+### Canonical Reference Example
+- `src/lib/features/items/` — Reference CRUD feature demonstrating schemas, query key factories, mutations, optimistic updates, and toasts.
+- `src/routes/(protected)/items/` — Client-side route demonstrating reactive TanStack Query state handling.
+
+### How to Erase / Replace the Example Feature
+1. Delete the feature: `rm -rf src/lib/features/items`
+2. Delete the route: `rm -rf src/routes/(protected)/items`
+3. Remove the `<a href="/items">Items</a>` link in `src/routes/(protected)/+layout.svelte`.
 
 ## Key Constraints
 
@@ -38,7 +60,7 @@ You are a frontend subagent working on a SvelteKit web application built from th
 ## Svelte 5 Quick Reference
 
 | Avoid | Use |
-|-------|-----|
+|---|---|
 | `let x = 0` (implicit reactivity) | `$state` |
 | `$:` reactive statements | `$derived` / `$effect` |
 | `export let` | `$props` |
@@ -55,15 +77,13 @@ You are a frontend subagent working on a SvelteKit web application built from th
 
 ## Adding a New Feature — Checklist
 
-1. **Route**: create `src/routes/(protected)/your-feature/+page.svelte` for protected pages, or `src/routes/your-feature/+page.svelte` for public pages
-2. **Feature module**: create `src/lib/features/your-feature/` with:
-   - `api.ts` — typed openapi-fetch calls using `client`
-   - `queries.ts` — TanStack Query hooks (`createQuery`, `createMutation`)
-   - `schema.ts` — Zod schemas for forms
-   - `components/` — feature-specific Svelte components
-3. **Forms**: define Zod schema in `schema.ts`, use `superForm` with `zod4Client` adapter
-4. **UI**: compose from `src/lib/components/ui/`; use `toast` from `svelte-sonner` for user feedback
-5. **Validate**: run `npx @sveltejs/mcp svelte-autofixer` on each `.svelte` file, then `pnpm check`
+1. **Schema**: Create `src/lib/features/your-feature/schema.ts` with Zod validation schemas and exported types.
+2. **API**: Create `src/lib/features/your-feature/api.ts` with typed endpoint functions.
+3. **Queries**: Create `src/lib/features/your-feature/queries.ts` with query key factory and custom query/mutation hooks.
+4. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
+5. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte`.
+6. **Navigation**: Add route link in `src/routes/(protected)/+layout.svelte`.
+7. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `pnpm check`.
 
 ## Out of Scope
 

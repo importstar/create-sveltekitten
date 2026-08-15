@@ -5,6 +5,8 @@ import v0_2_2 from './v0.2.2.js';
 import v0_2_3 from './v0.2.3.js';
 import v0_2_4 from './v0.2.4.js';
 import v0_2_5 from './v0.2.5.js';
+import v0_2_6 from './v0.2.6.js';
+import v0_3_0 from './v0.3.0.js';
 
 export interface FileTransform {
 	/** Relative path from project root, e.g. "src/lib/auth.ts" */
@@ -23,7 +25,17 @@ export interface Codemod {
 }
 
 /** Add new version modules here in ascending order. */
-export const codemods: Codemod[] = [v0_1_1, v0_2_0, v0_2_1, v0_2_2, v0_2_3, v0_2_4, v0_2_5];
+export const codemods: Codemod[] = [
+	v0_1_1,
+	v0_2_0,
+	v0_2_1,
+	v0_2_2,
+	v0_2_3,
+	v0_2_4,
+	v0_2_5,
+	v0_2_6,
+	v0_3_0
+];
 
 function parseVersion(v: string): [number, number, number] {
 	const [major = 0, minor = 0, patch = 0] = v.split('.').map(Number);

@@ -85,7 +85,7 @@ async function main() {
             {
                 value: 'ssr',
                 label: 'SSR',
-                hint: `v${version} · adapter-node · server-side auth · proxy · pino logger`
+                hint: `v${version} · adapter-node · Drizzle SQLite / FastAPI BFF · server auth`
             },
             {
                 value: 'spa',
@@ -98,15 +98,53 @@ async function main() {
         p.cancel('Cancelled.');
         process.exit(0);
     }
-    const backendUrlKey = template === 'ssr' ? 'BACKEND_API_URL' : 'PUBLIC_API_URL';
-    const backendUrl = await p.text({
-        message: `${backendUrlKey} (backend base URL)`,
-        placeholder: 'http://localhost:9000',
-        initialValue: 'http://localhost:9000'
-    });
-    if (p.isCancel(backendUrl)) {
-        p.cancel('Cancelled.');
-        process.exit(0);
+    let ssrMode;
+    let backendUrl = 'http://localhost:9000';
+    if (template === 'ssr') {
+        const mode = await p.select({
+            message: 'Backend architecture for SSR',
+            options: [
+                {
+                    value: 'fullstack',
+                    label: 'SvelteKit Full-Stack (Integrated)',
+                    hint: 'SQLite · Drizzle ORM · Server Actions · Local Database'
+                },
+                {
+                    value: 'fastapi',
+                    label: 'FastAPI Backend (BFF Proxy)',
+                    hint: 'OpenAPI client · /api/proxy/** · External Python API'
+                }
+            ]
+        });
+        if (p.isCancel(mode)) {
+            p.cancel('Cancelled.');
+            process.exit(0);
+        }
+        ssrMode = mode;
+        if (ssrMode === 'fastapi') {
+            const url = await p.text({
+                message: 'BACKEND_API_URL (FastAPI base URL)',
+                placeholder: 'http://localhost:9000',
+                initialValue: 'http://localhost:9000'
+            });
+            if (p.isCancel(url)) {
+                p.cancel('Cancelled.');
+                process.exit(0);
+            }
+            backendUrl = url;
+        }
+    }
+    else {
+        const url = await p.text({
+            message: 'PUBLIC_API_URL (backend base URL)',
+            placeholder: 'http://localhost:9000',
+            initialValue: 'http://localhost:9000'
+        });
+        if (p.isCancel(url)) {
+            p.cancel('Cancelled.');
+            process.exit(0);
+        }
+        backendUrl = url;
     }
     const targetDir = join(process.cwd(), projectName);
     if (existsSync(targetDir)) {
@@ -132,10 +170,14 @@ async function main() {
         };
         await applyReplacements(targetDir, replacements);
         const envLines = template === 'ssr'
-            ? `PUBLIC_APP_TITLE=${projectName}\nBACKEND_API_URL=${backendUrl}\n`
+            ? `PUBLIC_APP_TITLE=${projectName}\nDATABASE_URL=sqlite.db\nBACKEND_API_URL=${backendUrl}\n`
             : `PUBLIC_APP_TITLE=${projectName}\nPUBLIC_API_URL=${backendUrl}\n`;
         await writeFile(join(targetDir, '.env'), envLines);
-        await writeFile(join(targetDir, '.sveltekitten.json'), JSON.stringify({ version: await getVersion(), template }, null, '\t') + '\n');
+        await writeFile(join(targetDir, '.sveltekitten.json'), JSON.stringify({
+            version: await getVersion(),
+            template,
+            ...(ssrMode ? { ssrMode } : {})
+        }, null, '\t') + '\n');
         spinner.stop('Project scaffolded!');
     }
     catch (err) {
@@ -143,8 +185,23 @@ async function main() {
         p.log.error(String(err));
         process.exit(1);
     }
-    p.note([`cd ${projectName}`, `pnpm install`, `pnpm dev`].join('\n'), 'Next steps');
-    if (template === 'ssr') {
+    if (template === 'ssr' && ssrMode === 'fullstack') {
+        p.note([
+            `cd ${projectName}`,
+            'pnpm install',
+            'pnpm dev'
+        ].join('\n'), 'Next steps');
+        p.note([
+            'Manage database schema & data:',
+            '  pnpm db:push    # push schema changes to sqlite.db',
+            '  pnpm db:studio  # open Drizzle Studio in browser',
+            '  pnpm db:generate # generate SQL migrations'
+        ].join('\n'), 'Database');
+    }
+    else {
+        p.note([`cd ${projectName}`, `pnpm install`, `pnpm dev`].join('\n'), 'Next steps');
+    }
+    if (template === 'ssr' && ssrMode === 'fastapi') {
         p.note([
             'Fetch latest spec and regenerate types:',
             '  pnpm openapi:update',
