@@ -4,9 +4,12 @@ import { cp, mkdir, readFile, writeFile, readdir, rename, unlink } from 'node:fs
 import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { styleText } from 'node:util';
 import { patch } from './patch.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = join(__dirname, '../templates');
+// @clack/prompts 1.x no longer dims note() body text by default; this restores the 0.x look.
+const dimNote = { format: (line) => styleText('dim', line) };
 async function getVersion() {
     const pkg = JSON.parse(await readFile(join(__dirname, '../package.json'), 'utf-8'));
     return pkg.version;
@@ -73,7 +76,7 @@ async function main() {
     const projectName = await p.text({
         message: 'Project name',
         placeholder: 'my-app',
-        validate: (v) => (v.trim() ? undefined : 'Required')
+        validate: (v) => (v?.trim() ? undefined : 'Required')
     });
     if (p.isCancel(projectName)) {
         p.cancel('Cancelled.');
@@ -190,16 +193,16 @@ async function main() {
             `cd ${projectName}`,
             'pnpm install',
             'pnpm dev'
-        ].join('\n'), 'Next steps');
+        ].join('\n'), 'Next steps', dimNote);
         p.note([
             'Manage database schema & data:',
             '  pnpm db:push    # push schema changes to sqlite.db',
             '  pnpm db:studio  # open Drizzle Studio in browser',
             '  pnpm db:generate # generate SQL migrations'
-        ].join('\n'), 'Database');
+        ].join('\n'), 'Database', dimNote);
     }
     else {
-        p.note([`cd ${projectName}`, `pnpm install`, `pnpm dev`].join('\n'), 'Next steps');
+        p.note([`cd ${projectName}`, `pnpm install`, `pnpm dev`].join('\n'), 'Next steps', dimNote);
     }
     if (template === 'ssr' && ssrMode === 'fastapi') {
         p.note([
@@ -208,7 +211,7 @@ async function main() {
             '',
             'Or regenerate from committed spec only:',
             '  pnpm openapi:fastapi'
-        ].join('\n'), 'API types');
+        ].join('\n'), 'API types', dimNote);
     }
     p.outro('Happy coding!');
 }

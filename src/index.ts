@@ -4,10 +4,14 @@ import { cp, mkdir, readFile, writeFile, readdir, rename, unlink } from 'node:fs
 import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { styleText } from 'node:util';
 import { patch } from './patch.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = join(__dirname, '../templates');
+
+// @clack/prompts 1.x no longer dims note() body text by default; this restores the 0.x look.
+const dimNote = { format: (line: string) => styleText('dim', line) };
 
 async function getVersion(): Promise<string> {
 	const pkg = JSON.parse(await readFile(join(__dirname, '../package.json'), 'utf-8'));
@@ -77,7 +81,7 @@ async function main() {
 	const projectName = await p.text({
 		message: 'Project name',
 		placeholder: 'my-app',
-		validate: (v) => (v.trim() ? undefined : 'Required')
+		validate: (v) => (v?.trim() ? undefined : 'Required')
 	});
 	if (p.isCancel(projectName)) {
 		p.cancel('Cancelled.');
@@ -218,7 +222,8 @@ async function main() {
 				'pnpm install',
 				'pnpm dev'
 			].join('\n'),
-			'Next steps'
+			'Next steps',
+			dimNote
 		);
 
 		p.note(
@@ -228,12 +233,14 @@ async function main() {
 				'  pnpm db:studio  # open Drizzle Studio in browser',
 				'  pnpm db:generate # generate SQL migrations'
 			].join('\n'),
-			'Database'
+			'Database',
+			dimNote
 		);
 	} else {
 		p.note(
 			[`cd ${projectName}`, `pnpm install`, `pnpm dev`].join('\n'),
-			'Next steps'
+			'Next steps',
+			dimNote
 		);
 	}
 
@@ -246,7 +253,8 @@ async function main() {
 				'Or regenerate from committed spec only:',
 				'  pnpm openapi:fastapi'
 			].join('\n'),
-			'API types'
+			'API types',
+			dimNote
 		);
 	}
 
