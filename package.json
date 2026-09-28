@@ -1,6 +1,6 @@
 {
 	"name": "create-sveltekitten",
-	"version": "0.3.3",
+	"version": "0.3.4",
 	"type": "module",
 	"description": "Create a new SvelteKitten project (SSR or SPA)",
 	"bin": {
@@ -23,7 +23,7 @@
 	},
 	"devDependencies": {
 		"@types/node": "^22.0.0",
-		"tsx": "^4.19.0",
+		"tsx": "^4.23.15",
 		"typescript": "^5.7.0"
 	}
 }

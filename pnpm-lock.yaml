@@ -16,8 +16,8 @@ importers:
         specifier: ^22.0.0
         version: 22.19.19
       tsx:
-        specifier: ^4.19.0
-        version: 4.22.0
+        specifier: ^4.23.15
+        version: 4.23.15
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
@@ -205,8 +205,8 @@ packages:
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
 
-  tsx@4.22.0:
-    resolution: {integrity: sha512-8ccZMPD69s1AbKXx0C5ddTNZfNjwV04iIKgjZmKfKxMynEtSYcK0Lh7iQFh53fI5Yu4pb9usgAiqyPmEONaALg==}
+  tsx@4.23.15:
+    resolution: {integrity: sha512-Yiex1Ovn8z2xPpOWckIiysV1SSyRMY9BkLF++q0yKiDxCqRhosKfMg3janKkiLBwZ5c/YryloKwGZcrEmtwxKw==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -349,7 +349,7 @@ snapshots:
 
   sisteransi@1.0.5: {}
 
-  tsx@4.22.0:
+  tsx@4.23.15:
     dependencies:
       esbuild: 0.28.0
     optionalDependencies:
