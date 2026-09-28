@@ -3,6 +3,8 @@ import { items, type DbItem } from '$lib/server/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import type { CreateItemInput } from './schema';
 
+export type { DbItem };
+
 export async function getItems(userId?: string): Promise<DbItem[]> {
 	if (userId) {
 		return db
@@ -13,6 +15,10 @@ export async function getItems(userId?: string): Promise<DbItem[]> {
 			.all();
 	}
 	return db.select().from(items).orderBy(desc(items.createdAt)).all();
+}
+
+export async function getItemById(id: string): Promise<DbItem | undefined> {
+	return db.select().from(items).where(eq(items.id, id)).get();
 }
 
 export async function insertItem(input: CreateItemInput, userId?: string): Promise<DbItem> {
@@ -30,8 +36,11 @@ export async function insertItem(input: CreateItemInput, userId?: string): Promi
 	return newItem;
 }
 
-export async function updateItemCompletion(id: string, completed: boolean): Promise<void> {
-	db.update(items).set({ completed }).where(eq(items.id, id)).run();
+export async function updateItemCompletion(
+	id: string,
+	completed: boolean
+): Promise<DbItem | undefined> {
+	return db.update(items).set({ completed }).where(eq(items.id, id)).returning().get();
 }
 
 export async function removeItem(id: string): Promise<void> {

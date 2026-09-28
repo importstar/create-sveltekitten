@@ -87,6 +87,22 @@ pnpm openapi
 - openapi-fetch for type-safe API calls
 - ESLint + Prettier
 
+## Feature architecture
+
+Every domain feature lives in `src/lib/features/<name>/`, structured so it stays swappable and testable:
+
+| File | Purpose |
+| --- | --- |
+| `schema.ts` | Zod schemas + inferred TypeScript types |
+| `port.ts` | Interface for the feature's API surface (e.g. `ItemsApi`) — `queries.ts` depends on this, not on `api.ts` directly |
+| `api.ts` | Concrete client implementation of the port (HTTP calls, or an in-memory mock for SPA examples) |
+| `server.ts` *(SSR full-stack only)* | Repository: raw Drizzle queries, no business rules |
+| `service.ts` *(SSR full-stack only)* | Use-case layer between the route and the repository — this is where authorization/business rules live (e.g. verifying a row belongs to the requesting user) |
+| `queries.ts` | TanStack Query key factory + hooks, defaulting to the real port implementation but overridable (e.g. for tests) |
+| `components/` | Feature UI |
+
+`src/lib/features/items/` is the reference implementation of this pattern in both templates — SSR's version additionally shows the `service.ts` layer enforcing per-item ownership before a route handler is allowed to mutate or delete it.
+
 ## Scripts
 
 | Script        | Description                    |

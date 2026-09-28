@@ -1,4 +1,5 @@
 import type { Item, CreateItemInput } from './schema';
+import type { ItemsApi } from './port';
 
 export async function fetchItems(): Promise<Item[]> {
 	const res = await fetch('/api/items');
@@ -39,11 +40,11 @@ export async function toggleItem(id: string, completed: boolean): Promise<Item> 
 		const err = await res.json().catch(() => ({}));
 		throw new Error(err.error || 'Failed to update item');
 	}
+	const data = await res.json();
 	return {
-		id,
-		title: '',
-		completed,
-		createdAt: new Date().toISOString()
+		...data,
+		description: data.description ?? undefined,
+		createdAt: typeof data.createdAt === 'string' ? data.createdAt : new Date(data.createdAt).toISOString()
 	};
 }
 
@@ -56,3 +57,5 @@ export async function deleteItem(id: string): Promise<void> {
 		throw new Error(err.error || 'Failed to delete item');
 	}
 }
+
+export const itemsApi: ItemsApi = { fetchItems, createItem, toggleItem, deleteItem };

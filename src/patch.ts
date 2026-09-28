@@ -40,14 +40,19 @@ export async function patch(latestVersion: string) {
 		return;
 	}
 
-	// Preview changes
+	// Preview changes. A single patch run can chain several codemods (e.g. 0.3.0 → 0.3.3
+	// applies 0.3.1, 0.3.2 and 0.3.3 in sequence), and more than one of them can touch the
+	// same file. `currentContent` carries each file's in-progress content forward across
+	// codemods within this run, so a later codemod sees the earlier one's changes instead
+	// of re-reading stale content from disk and clobbering them on write.
 	interface PendingChange {
 		file: string;
-		oldContent: string;
 		newContent: string;
-		isNew?: boolean;
+		isNew: boolean;
 	}
-	const pending: PendingChange[] = [];
+	const originalContent = new Map<string, string | undefined>(); // undefined = file didn't exist yet
+	const currentContent = new Map<string, string>();
+	const isNewFile = new Map<string, boolean>();
 
 	for (const codemod of applicable) {
 		p.log.step(`Codemod ${codemod.from} → ${codemod.to}`);
@@ -56,24 +61,41 @@ export async function patch(latestVersion: string) {
 				continue;
 			}
 			const filePath = join(process.cwd(), t.file);
-			if (!existsSync(filePath)) {
-				if (t.create) {
-					const newContent = t.transform('');
-					p.log.info(`  create ${t.file}`);
-					pending.push({ file: t.file, oldContent: '', newContent, isNew: true });
-				} else {
-					p.log.warn(`  skip ${t.file} (not found)`);
-				}
+			let oldContent: string;
+			let firstEncounter = false;
+			if (currentContent.has(t.file)) {
+				oldContent = currentContent.get(t.file)!;
+			} else if (existsSync(filePath)) {
+				oldContent = await readFile(filePath, 'utf-8');
+				originalContent.set(t.file, oldContent);
+				firstEncounter = true;
+			} else if (t.create) {
+				oldContent = '';
+				originalContent.set(t.file, undefined);
+				isNewFile.set(t.file, true);
+				firstEncounter = true;
+			} else {
+				p.log.warn(`  skip ${t.file} (not found)`);
 				continue;
 			}
-			const oldContent = await readFile(filePath, 'utf-8');
+
 			const newContent = t.transform(oldContent);
-			if (oldContent === newContent) {
+			currentContent.set(t.file, newContent);
+
+			if (isNewFile.get(t.file) && firstEncounter) {
+				p.log.info(`  create ${t.file}`);
+			} else if (newContent === oldContent) {
 				p.log.info(`  unchanged ${t.file}`);
 			} else {
 				p.log.info(`  modified ${t.file}`);
-				pending.push({ file: t.file, oldContent, newContent });
 			}
+		}
+	}
+
+	const pending: PendingChange[] = [];
+	for (const [file, newContent] of currentContent) {
+		if (newContent !== (originalContent.get(file) ?? '')) {
+			pending.push({ file, newContent, isNew: isNewFile.get(file) ?? false });
 		}
 	}
 

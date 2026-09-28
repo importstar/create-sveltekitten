@@ -1,4 +1,5 @@
 import type { Item, CreateItemInput } from './schema';
+import type { ItemsApi } from './port';
 
 /**
  * In-memory store providing an immediate working example out-of-the-box.
@@ -51,3 +52,5 @@ export async function deleteItem(id: string): Promise<void> {
 	await new Promise((resolve) => setTimeout(resolve, 150));
 	mockItems = mockItems.filter((i) => i.id !== id);
 }
+
+export const itemsApi: ItemsApi = { fetchItems, createItem, toggleItem, deleteItem };

@@ -23,7 +23,9 @@ export async function patch(latestVersion) {
         p.outro('Done.');
         return;
     }
-    const pending = [];
+    const originalContent = new Map(); // undefined = file didn't exist yet
+    const currentContent = new Map();
+    const isNewFile = new Map();
     for (const codemod of applicable) {
         p.log.step(`Codemod ${codemod.from} → ${codemod.to}`);
         for (const t of codemod.transforms) {
@@ -31,26 +33,43 @@ export async function patch(latestVersion) {
                 continue;
             }
             const filePath = join(process.cwd(), t.file);
-            if (!existsSync(filePath)) {
-                if (t.create) {
-                    const newContent = t.transform('');
-                    p.log.info(`  create ${t.file}`);
-                    pending.push({ file: t.file, oldContent: '', newContent, isNew: true });
-                }
-                else {
-                    p.log.warn(`  skip ${t.file} (not found)`);
-                }
+            let oldContent;
+            let firstEncounter = false;
+            if (currentContent.has(t.file)) {
+                oldContent = currentContent.get(t.file);
+            }
+            else if (existsSync(filePath)) {
+                oldContent = await readFile(filePath, 'utf-8');
+                originalContent.set(t.file, oldContent);
+                firstEncounter = true;
+            }
+            else if (t.create) {
+                oldContent = '';
+                originalContent.set(t.file, undefined);
+                isNewFile.set(t.file, true);
+                firstEncounter = true;
+            }
+            else {
+                p.log.warn(`  skip ${t.file} (not found)`);
                 continue;
             }
-            const oldContent = await readFile(filePath, 'utf-8');
             const newContent = t.transform(oldContent);
-            if (oldContent === newContent) {
+            currentContent.set(t.file, newContent);
+            if (isNewFile.get(t.file) && firstEncounter) {
+                p.log.info(`  create ${t.file}`);
+            }
+            else if (newContent === oldContent) {
                 p.log.info(`  unchanged ${t.file}`);
             }
             else {
                 p.log.info(`  modified ${t.file}`);
-                pending.push({ file: t.file, oldContent, newContent });
             }
+        }
+    }
+    const pending = [];
+    for (const [file, newContent] of currentContent) {
+        if (newContent !== (originalContent.get(file) ?? '')) {
+            pending.push({ file, newContent, isNew: isNewFile.get(file) ?? false });
         }
     }
     if (pending.length === 0) {

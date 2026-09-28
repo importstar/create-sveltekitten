@@ -1,5 +1,6 @@
 import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
-import * as api from './api';
+import { itemsApi as defaultItemsApi } from './api';
+import type { ItemsApi } from './port';
 import type { CreateItemInput, Item } from './schema';
 import { toast } from 'svelte-sonner';
 
@@ -9,19 +10,22 @@ export const itemKeys = {
 	detail: (id: string) => [...itemKeys.all, 'detail', id] as const
 };
 
-export function useItems(initialDataGetter?: () => Item[] | undefined) {
+export function useItems(
+	initialDataGetter?: () => Item[] | undefined,
+	itemsApi: ItemsApi = defaultItemsApi
+) {
 	return createQuery(() => ({
 		queryKey: itemKeys.lists(),
-		queryFn: api.fetchItems,
+		queryFn: itemsApi.fetchItems,
 		initialData: initialDataGetter ? initialDataGetter() : undefined,
 		staleTime: 1000 * 60
 	}));
 }
 
-export function useCreateItem() {
+export function useCreateItem(itemsApi: ItemsApi = defaultItemsApi) {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
-		mutationFn: (input: CreateItemInput) => api.createItem(input),
+		mutationFn: (input: CreateItemInput) => itemsApi.createItem(input),
 		onSuccess: (newItem) => {
 			queryClient.invalidateQueries({ queryKey: itemKeys.lists() });
 			toast.success(`Created "${newItem.title}"`);
@@ -32,11 +36,11 @@ export function useCreateItem() {
 	}));
 }
 
-export function useToggleItem() {
+export function useToggleItem(itemsApi: ItemsApi = defaultItemsApi) {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
 		mutationFn: ({ id, completed }: { id: string; completed: boolean }) =>
-			api.toggleItem(id, completed),
+			itemsApi.toggleItem(id, completed),
 		onSuccess: (updatedItem) => {
 			queryClient.invalidateQueries({ queryKey: itemKeys.lists() });
 			toast.success(
@@ -51,10 +55,10 @@ export function useToggleItem() {
 	}));
 }
 
-export function useDeleteItem() {
+export function useDeleteItem(itemsApi: ItemsApi = defaultItemsApi) {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
-		mutationFn: (id: string) => api.deleteItem(id),
+		mutationFn: (id: string) => itemsApi.deleteItem(id),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: itemKeys.lists() });
 			toast.success('Item deleted');
