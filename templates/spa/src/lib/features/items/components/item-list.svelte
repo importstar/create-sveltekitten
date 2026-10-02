@@ -5,6 +5,7 @@
 	import { useItems } from '../queries';
 	import ItemCard from './item-card.svelte';
 	import ItemEmptyState from './item-empty-state.svelte';
+	import { itemFilters, itemFilterKeys, type ItemFilterKey } from '../filters';
 	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
 
 	interface Props {
@@ -15,53 +16,33 @@
 
 	const itemsQuery = useItems(() => initialData);
 
-	let filter = $state<'all' | 'active' | 'completed'>('all');
+	let filter = $state<ItemFilterKey>('all');
 
 	const items = $derived(itemsQuery.data ?? []);
-	const totalCount = $derived(items.length);
-	const activeCount = $derived(items.filter((i) => !i.completed).length);
-	const completedCount = $derived(items.filter((i) => i.completed).length);
-
-	const filteredItems = $derived(
-		items.filter((item) => {
-			if (filter === 'active') return !item.completed;
-			if (filter === 'completed') return item.completed;
-			return true;
-		})
+	const counts = $derived(
+		Object.fromEntries(
+			itemFilterKeys.map((key) => [key, items.filter(itemFilters[key].predicate).length])
+		) as Record<ItemFilterKey, number>
 	);
+
+	const filteredItems = $derived(items.filter(itemFilters[filter].predicate));
 </script>
 
 <div class="space-y-4">
 	<!-- Filter header -->
 	<div class="flex items-center justify-between gap-2">
 		<div class="flex items-center gap-1 rounded-lg border bg-muted/30 p-1 text-xs">
-			<button
-				type="button"
-				class="cursor-pointer rounded-md px-2.5 py-1 font-medium transition-colors {filter === 'all'
-					? 'bg-background text-foreground shadow-xs'
-					: 'text-muted-foreground hover:text-foreground'}"
-				onclick={() => (filter = 'all')}
-			>
-				All ({totalCount})
-			</button>
-			<button
-				type="button"
-				class="cursor-pointer rounded-md px-2.5 py-1 font-medium transition-colors {filter === 'active'
-					? 'bg-background text-foreground shadow-xs'
-					: 'text-muted-foreground hover:text-foreground'}"
-				onclick={() => (filter = 'active')}
-			>
-				Active ({activeCount})
-			</button>
-			<button
-				type="button"
-				class="cursor-pointer rounded-md px-2.5 py-1 font-medium transition-colors {filter === 'completed'
-					? 'bg-background text-foreground shadow-xs'
-					: 'text-muted-foreground hover:text-foreground'}"
-				onclick={() => (filter = 'completed')}
-			>
-				Completed ({completedCount})
-			</button>
+			{#each itemFilterKeys as key (key)}
+				<button
+					type="button"
+					class="cursor-pointer rounded-md px-2.5 py-1 font-medium transition-colors {filter === key
+						? 'bg-background text-foreground shadow-xs'
+						: 'text-muted-foreground hover:text-foreground'}"
+					onclick={() => (filter = key)}
+				>
+					{itemFilters[key].label} ({counts[key]})
+				</button>
+			{/each}
 		</div>
 
 		<Button

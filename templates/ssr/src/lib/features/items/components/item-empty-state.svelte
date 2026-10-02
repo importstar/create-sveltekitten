@@ -1,19 +1,14 @@
 <script lang="ts">
 	import InboxIcon from '@lucide/svelte/icons/inbox';
+	import { itemFilters, type ItemFilterKey } from '../filters';
 
 	interface Props {
-		filter: 'all' | 'active' | 'completed';
+		filter: ItemFilterKey;
 	}
 
 	let { filter }: Props = $props();
 
-	const message = $derived(
-		filter === 'completed'
-			? 'No completed items yet.'
-			: filter === 'active'
-				? 'No active items. All tasks done!'
-				: 'No items created yet. Add one to get started!'
-	);
+	const message = $derived(itemFilters[filter].empty);
 </script>
 
 <div class="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">

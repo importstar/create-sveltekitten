@@ -20,6 +20,7 @@ import v0_3_12 from './v0.3.12.js';
 import v0_3_13 from './v0.3.13.js';
 import v0_3_14 from './v0.3.14.js';
 import v0_3_15 from './v0.3.15.js';
+import v0_3_16 from './v0.3.16.js';
 /** Add new version modules here in ascending order. */
 export const codemods = [
     v0_1_1,
@@ -43,7 +44,8 @@ export const codemods = [
     v0_3_12,
     v0_3_13,
     v0_3_14,
-    v0_3_15
+    v0_3_15,
+    v0_3_16
 ];
 function parseVersion(v) {
     const [major = 0, minor = 0, patch = 0] = v.split('.').map(Number);
