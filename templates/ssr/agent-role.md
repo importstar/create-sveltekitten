@@ -52,7 +52,7 @@ src/lib/features/<feature-name>/
 - Service errors extend `ApiError` (`$lib/utils/api-core.ts`) and carry their HTTP status (e.g. `ItemNotFoundError` → 404). Route handlers end with `catch (err) { return toErrorResponse(err, 'Failed to …'); }` from `$lib/server/http.ts`, so adding an error never means editing every handler.
 
 ### Canonical Reference Example
-- `src/lib/features/items/` — Reference CRUD feature demonstrating schemas, the `ItemsApi` contract, a Drizzle repository (`server.ts`) behind a use-case/authorization layer (`service.ts`), query key factories, mutations, optimistic updates, and toasts.
+- `src/lib/features/items/` — Reference CRUD feature demonstrating schemas, the `ItemsApi` contract, a Drizzle repository (`server.ts`) behind a use-case/authorization layer (`service.ts`), query key factories, mutations with cache invalidation, and toasts.
 - `src/routes/(protected)/items/` — Page showing server prefetching (`+page.server.ts`) combined with client hydration (`initialData`).
 - `src/routes/api/items/+server.ts` — API endpoint calling `itemsService` (which enforces per-item ownership) rather than the repository directly.
 - `src/lib/features/items/service.test.ts` — Ownership rules tested against `testing/in-memory-repository.ts`.
@@ -97,10 +97,10 @@ src/lib/features/<feature-name>/
 1. **Schema**: Create `src/lib/features/your-feature/schema.ts` with Zod validation schemas and exported types.
 2. **Server / DB**: If full-stack, add table to `src/lib/server/db/schema.ts` and repository operations (no business rules) in `src/lib/features/your-feature/server.ts`.
 3. **Service**: Create `src/lib/features/your-feature/service.ts` — a repository interface plus a `createYourFeatureService(repo)` factory whose use cases enforce authorization (e.g. ownership checks) before mutating/deleting. Implement the interface in `server.ts`, wire it in `src/lib/server/services.ts`, and test the rules in `service.test.ts` with an in-memory repository.
-4. **Contract**: Create `src/lib/features/your-feature/contract.ts` with an interface describing the feature's client API surface.
+4. **Contract**: Create `src/lib/features/your-feature/contract.ts` with an interface describing the feature's client API surface. Add `contract.test.ts` that runs the contract suite (see `testing/items-api-contract.ts`) against every implementation, including a fake in `testing/`.
 5. **API / Endpoint**: Create `src/routes/api/your-feature/+server.ts` (calling the service from `$lib/server/services`, never `server.ts` directly) and `src/lib/features/your-feature/api.ts` implementing the `contract.ts` interface.
 6. **Queries**: Create `src/lib/features/your-feature/queries.ts` with query key factory and custom query/mutation hooks, each taking the contract implementation as an optional parameter that defaults to `useYourFeatureApi()` from `context.ts`. Provide the real implementation once in `src/routes/+layout.svelte` with `setYourFeatureApi(yourFeatureApi)`.
 7. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
-8. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte` (and `+page.server.ts` for server prefetching).
+8. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte` (and `+page.server.ts` for server prefetching — load through the service from `$lib/server/services`, never `server.ts`).
 9. **Navigation**: Add route link in `src/routes/(protected)/+layout.svelte`.
 10. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `pnpm check` and `pnpm test:unit`.

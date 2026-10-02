@@ -45,7 +45,7 @@ src/lib/features/<feature-name>/
 The contract is more than the type: e.g. `toggleItem` must resolve with the full persisted item, failures reject with a readable `Error`. `testing/items-api-contract.ts` spells those promises out as tests, and `contract.test.ts` runs them against every implementation — including the fake in `testing/fake-items-api.ts`, so a test double can't drift from the real thing.
 
 ### Canonical Reference Example
-- `src/lib/features/items/` — Reference CRUD feature demonstrating schemas, the `ItemsApi` contract, an in-memory mock implementation, query key factories, mutations, optimistic updates, and toasts.
+- `src/lib/features/items/` — Reference CRUD feature demonstrating schemas, the `ItemsApi` contract, an in-memory mock implementation, query key factories, mutations with cache invalidation, and toasts.
 - `src/routes/(protected)/items/` — Client-side route demonstrating reactive TanStack Query state handling.
 
 ### How to Erase / Replace the Example Feature
@@ -86,7 +86,7 @@ The contract is more than the type: e.g. `toggleItem` must resolve with the full
 ## Adding a New Feature — Checklist
 
 1. **Schema**: Create `src/lib/features/your-feature/schema.ts` with Zod validation schemas and exported types.
-2. **Contract**: Create `src/lib/features/your-feature/contract.ts` with an interface describing the feature's API surface.
+2. **Contract**: Create `src/lib/features/your-feature/contract.ts` with an interface describing the feature's API surface. Add `contract.test.ts` that runs the contract suite (see `testing/items-api-contract.ts`) against every implementation, including a fake in `testing/`.
 3. **API**: Create `src/lib/features/your-feature/api.ts` with typed endpoint functions implementing the `contract.ts` interface.
 4. **Queries**: Create `src/lib/features/your-feature/queries.ts` with query key factory and custom query/mutation hooks, each taking the contract implementation as an optional parameter that defaults to `useYourFeatureApi()` from `context.ts`. Provide the real implementation once in `src/routes/+layout.svelte` with `setYourFeatureApi(yourFeatureApi)`.
 5. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
