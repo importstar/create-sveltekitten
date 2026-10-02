@@ -2,6 +2,7 @@ import { db } from '$lib/server/db';
 import { items, type DbItem } from '$lib/server/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import type { CreateItemInput } from './schema';
+import type { ItemsRepository } from './service';
 
 export type { DbItem };
 
@@ -43,3 +44,11 @@ export async function updateItemCompletion(
 export async function removeItem(id: string): Promise<void> {
 	db.delete(items).where(eq(items.id, id)).run();
 }
+
+export const drizzleItemsRepository: ItemsRepository = {
+	getById: getItemById,
+	listByUser: getItems,
+	insert: insertItem,
+	setCompleted: updateItemCompletion,
+	remove: removeItem
+};

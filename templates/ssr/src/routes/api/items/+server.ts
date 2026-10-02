@@ -1,12 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import {
-	addItem,
-	deleteItemForUser,
-	ItemForbiddenError,
-	ItemNotFoundError,
-	listItems,
-	toggleItemCompletion
-} from '$lib/features/items/service';
+import { ItemForbiddenError, ItemNotFoundError } from '$lib/features/items/service';
+import { itemsService } from '$lib/server/services';
 import { createItemSchema } from '$lib/features/items/schema';
 
 // Items belong to a SQLite session user. Without one (anonymous, or FastAPI-JWT mode)
@@ -17,7 +11,7 @@ function unauthorized() {
 
 export const GET: RequestHandler = async ({ locals }) => {
 	if (!locals.user) return unauthorized();
-	const items = await listItems(locals.user.id);
+	const items = await itemsService.listItems(locals.user.id);
 	return json(items);
 };
 
@@ -29,7 +23,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if (!result.success) {
 			return json({ error: result.error.issues[0]?.message ?? 'Invalid input' }, { status: 400 });
 		}
-		const created = await addItem(result.data, locals.user.id);
+		const created = await itemsService.addItem(result.data, locals.user.id);
 		return json(created, { status: 201 });
 	} catch {
 		return json({ error: 'Failed to create item' }, { status: 500 });
@@ -44,7 +38,7 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 		if (typeof id !== 'string' || typeof completed !== 'boolean') {
 			return json({ error: 'Invalid payload' }, { status: 400 });
 		}
-		const updated = await toggleItemCompletion(id, completed, locals.user.id);
+		const updated = await itemsService.toggleItemCompletion(id, completed, locals.user.id);
 		return json(updated);
 	} catch (err) {
 		if (err instanceof ItemNotFoundError) return json({ error: 'Item not found' }, { status: 404 });
@@ -60,7 +54,7 @@ export const DELETE: RequestHandler = async ({ request, url, locals }) => {
 		if (!id || typeof id !== 'string') {
 			return json({ error: 'Item ID is required' }, { status: 400 });
 		}
-		await deleteItemForUser(id, locals.user.id);
+		await itemsService.deleteItemForUser(id, locals.user.id);
 		return json({ success: true });
 	} catch (err) {
 		if (err instanceof ItemNotFoundError) return json({ error: 'Item not found' }, { status: 404 });

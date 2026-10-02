@@ -32,8 +32,10 @@ Every domain feature is completely self-contained in `src/lib/features/<feature-
 src/lib/features/<feature-name>/
 ├── schema.ts           # Zod schemas (input validation) & inferred TypeScript types
 ├── contract.ts         # Interface for the feature's client API surface (e.g. `ItemsApi`)
-├── server.ts           # Repository: raw Drizzle database queries only — no business rules
-├── service.ts          # Use-case layer: calls server.ts, enforces authorization/business rules
+├── server.ts           # Repository: raw Drizzle database queries only — no business rules — implements service.ts's repository interface
+├── service.ts          # Use-case layer: repository interface + create<Feature>Service(repo), enforces authorization/business rules
+├── service.test.ts     # Unit tests for the rules, run against an in-memory repository (no SQLite)
+├── testing/            # Test doubles (e.g. in-memory repository)
 ├── api.ts              # Client API calls (/api/... or fastapiClient) — implements contract.ts
 ├── queries.ts          # TanStack Query key factory + use<Query>/use<Mutation> hooks, injected with the contract implementation
 ├── components/         # Feature-specific Svelte 5 components
@@ -42,12 +44,14 @@ src/lib/features/<feature-name>/
 
 **Why the extra layers?**
 - `contract.ts` declares an interface that `api.ts` implements and that `queries.ts` depends on instead of importing `api.ts` directly (dependency inversion). Each hook in `queries.ts` takes the implementation as an optional parameter defaulting to the real one, e.g. `useItems(initialDataGetter?, itemsApi: ItemsApi = defaultItemsApi)` — swap it for a fake in tests without touching `queries.ts`.
-- `service.ts` sits between the route handler (`src/routes/api/<feature>/+server.ts`) and the repository (`server.ts`). This is where authorization/business rules belong — e.g. verifying the requesting user owns a row before it's mutated or deleted. **Route handlers call `service.ts`, never `server.ts` directly.**
+- `service.ts` sits between the route handler (`src/routes/api/<feature>/+server.ts`) and the repository (`server.ts`). This is where authorization/business rules belong — e.g. verifying the requesting user owns a row before it's mutated or deleted. **Route handlers call the service, never `server.ts` directly.**
+- `service.ts` doesn't import `server.ts`: it declares the repository interface it needs (e.g. `ItemsRepository`) and exports a factory, `createItemsService(repo)`. `server.ts` implements the interface with Drizzle, and `src/lib/server/services.ts` (the composition root) wires the two: `export const itemsService = createItemsService(drizzleItemsRepository)`. Routes import `itemsService` from there; tests build a service over an in-memory repository, so the rules are testable without SQLite.
 
 ### Canonical Reference Example
 - `src/lib/features/items/` — Reference CRUD feature demonstrating schemas, the `ItemsApi` contract, a Drizzle repository (`server.ts`) behind a use-case/authorization layer (`service.ts`), query key factories, mutations, optimistic updates, and toasts.
 - `src/routes/(protected)/items/` — Page showing server prefetching (`+page.server.ts`) combined with client hydration (`initialData`).
-- `src/routes/api/items/+server.ts` — API endpoint calling `service.ts` (which enforces per-item ownership) rather than the repository directly.
+- `src/routes/api/items/+server.ts` — API endpoint calling `itemsService` (which enforces per-item ownership) rather than the repository directly.
+- `src/lib/features/items/service.test.ts` — Ownership rules tested against `testing/in-memory-repository.ts`.
 - The items example needs a SQLite session user (fullstack mode): `/api/items` returns 401 without `locals.user`, and every row is scoped to its owner. FastAPI-JWT projects keep their data in the FastAPI backend instead.
 
 ### Database Commands
@@ -88,9 +92,9 @@ src/lib/features/<feature-name>/
 
 1. **Schema**: Create `src/lib/features/your-feature/schema.ts` with Zod validation schemas and exported types.
 2. **Server / DB**: If full-stack, add table to `src/lib/server/db/schema.ts` and repository operations (no business rules) in `src/lib/features/your-feature/server.ts`.
-3. **Service**: Create `src/lib/features/your-feature/service.ts` — use-case functions that call `server.ts` and enforce authorization (e.g. ownership checks) before mutating/deleting.
+3. **Service**: Create `src/lib/features/your-feature/service.ts` — a repository interface plus a `createYourFeatureService(repo)` factory whose use cases enforce authorization (e.g. ownership checks) before mutating/deleting. Implement the interface in `server.ts`, wire it in `src/lib/server/services.ts`, and test the rules in `service.test.ts` with an in-memory repository.
 4. **Contract**: Create `src/lib/features/your-feature/contract.ts` with an interface describing the feature's client API surface.
-5. **API / Endpoint**: Create `src/routes/api/your-feature/+server.ts` (calling `service.ts`, never `server.ts` directly) and `src/lib/features/your-feature/api.ts` implementing the `contract.ts` interface.
+5. **API / Endpoint**: Create `src/routes/api/your-feature/+server.ts` (calling the service from `$lib/server/services`, never `server.ts` directly) and `src/lib/features/your-feature/api.ts` implementing the `contract.ts` interface.
 6. **Queries**: Create `src/lib/features/your-feature/queries.ts` with query key factory and custom query/mutation hooks, each taking the contract implementation as an optional parameter (default to the real `api.ts` implementation).
 7. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
 8. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte` (and `+page.server.ts` for server prefetching).

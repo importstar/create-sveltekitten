@@ -45,7 +45,7 @@ The version comes from `package.json` at scaffold time. The `patch` command uses
 Template features under `src/lib/features/<name>/` follow a layered pattern — `src/lib/features/items/` in each template is the canonical example, see `templates/ssr/agent-role.md` / `templates/spa/agent-role.md` for the full breakdown:
 
 - `schema.ts` (Zod) → `contract.ts` (interface: what any implementation of the feature's API must do) → `api.ts` (implements the contract) → `queries.ts` (TanStack Query hooks, depend on the contract via an optional injected parameter, not on `api.ts` directly)
-- SSR full-stack features additionally split `server.ts` (Drizzle repository, no business rules) from `service.ts` (use-case layer with authorization — e.g. ownership checks). Route handlers (`src/routes/api/<feature>/+server.ts`) call `service.ts`, never `server.ts` directly.
+- SSR full-stack features additionally split `server.ts` (Drizzle repository, no business rules) from `service.ts` (use-case layer with authorization — e.g. ownership checks). `service.ts` declares the repository interface it needs and exports a `create<Feature>Service(repo)` factory; `server.ts` implements the interface, and `src/lib/server/services.ts` (composition root) wires them. Route handlers (`src/routes/api/<feature>/+server.ts`) call the service from `$lib/server/services`, never `server.ts` directly. `service.test.ts` tests the rules against an in-memory repository under `testing/`.
 
 When this pattern changes, update it in three places together: the template files themselves, `templates/ssr/agent-role.md` / `templates/spa/agent-role.md`, and this section.
 
