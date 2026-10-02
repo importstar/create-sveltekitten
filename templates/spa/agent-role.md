@@ -33,13 +33,14 @@ src/lib/features/<feature-name>/
 ├── contract.ts         # Interface for the feature's API surface (e.g. `ItemsApi`)
 ├── contract.test.ts    # Runs the shared contract suite (testing/items-api-contract.ts) against every implementation
 ├── api.ts              # Typed API calls via client (or mock fallback) — implements contract.ts
-├── queries.ts          # TanStack Query key factory + use<Query>/use<Mutation> hooks, injected with the contract implementation
+├── context.ts          # createContext for the contract: set<Feature>Api() / use<Feature>Api() (falls back to api.ts)
+├── queries.ts          # TanStack Query key factory + use<Query>/use<Mutation> hooks, reading the contract implementation from context
 ├── testing/            # Fake ItemsApi and the shared contract suite
 ├── components/         # Feature-specific Svelte 5 components
 └── index.ts            # Public barrel export
 ```
 
-**Why `contract.ts`?** `queries.ts` depends on the `contract.ts` interface instead of importing `api.ts` directly (dependency inversion). Each hook takes the implementation as an optional parameter defaulting to the real one, e.g. `useItems(initialDataGetter?, itemsApi: ItemsApi = defaultItemsApi)` — swap it for a fake in tests without touching `queries.ts`.
+**Why `contract.ts`?** `queries.ts` depends on the `contract.ts` interface instead of importing `api.ts` directly (dependency inversion). The implementation is provided through context: the root layout (`src/routes/+layout.svelte`) calls `setItemsApi(itemsApi)`, and each hook defaults to it, e.g. `useItems(initialDataGetter?, itemsApi: ItemsApi = useItemsApi())`. A test or component harness calls `setItemsApi(createFakeItemsApi())` to run a whole component tree against a fake, or passes an implementation to a single hook — no change to `queries.ts` either way.
 
 The contract is more than the type: e.g. `toggleItem` must resolve with the full persisted item, failures reject with a readable `Error`. `testing/items-api-contract.ts` spells those promises out as tests, and `contract.test.ts` runs them against every implementation — including the fake in `testing/fake-items-api.ts`, so a test double can't drift from the real thing.
 
@@ -87,7 +88,7 @@ The contract is more than the type: e.g. `toggleItem` must resolve with the full
 1. **Schema**: Create `src/lib/features/your-feature/schema.ts` with Zod validation schemas and exported types.
 2. **Contract**: Create `src/lib/features/your-feature/contract.ts` with an interface describing the feature's API surface.
 3. **API**: Create `src/lib/features/your-feature/api.ts` with typed endpoint functions implementing the `contract.ts` interface.
-4. **Queries**: Create `src/lib/features/your-feature/queries.ts` with query key factory and custom query/mutation hooks, each taking the contract implementation as an optional parameter (default to the real `api.ts` implementation).
+4. **Queries**: Create `src/lib/features/your-feature/queries.ts` with query key factory and custom query/mutation hooks, each taking the contract implementation as an optional parameter that defaults to `useYourFeatureApi()` from `context.ts`. Provide the real implementation once in `src/routes/+layout.svelte` with `setYourFeatureApi(yourFeatureApi)`.
 5. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
 6. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte`.
 7. **Navigation**: Add route link in `src/routes/(protected)/+layout.svelte`.

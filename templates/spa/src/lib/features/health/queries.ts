@@ -1,6 +1,6 @@
 // src/lib/features/health/queries.ts (หรือ path ตามที่คุณจัด)
 import { createQuery } from '@tanstack/svelte-query';
-import { healthApi as defaultHealthApi } from './api';
+import { useHealthApi } from './context';
 import type { HealthApi } from './contract';
 
 // 1. Query Keys Factory
@@ -11,7 +11,7 @@ export const healthKeys = {
 };
 
 // 2. Custom Hook
-export const useHealthStatus = (healthApi: HealthApi = defaultHealthApi) => {
+export const useHealthStatus = (healthApi: HealthApi = useHealthApi()) => {
 	return createQuery(() => ({
 		queryKey: healthKeys.status(),
 		queryFn: () => healthApi.healthStatus(),

@@ -1,5 +1,5 @@
 import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
-import { itemsApi as defaultItemsApi } from './api';
+import { useItemsApi } from './context';
 import type { ItemsApi } from './contract';
 import type { CreateItemInput, Item } from './schema';
 import { toast } from 'svelte-sonner';
@@ -12,7 +12,7 @@ export const itemKeys = {
 
 export function useItems(
 	initialDataGetter?: () => Item[] | undefined,
-	itemsApi: ItemsApi = defaultItemsApi
+	itemsApi: ItemsApi = useItemsApi()
 ) {
 	return createQuery(() => ({
 		queryKey: itemKeys.lists(),
@@ -22,7 +22,7 @@ export function useItems(
 	}));
 }
 
-export function useCreateItem(itemsApi: ItemsApi = defaultItemsApi) {
+export function useCreateItem(itemsApi: ItemsApi = useItemsApi()) {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
 		mutationFn: (input: CreateItemInput) => itemsApi.createItem(input),
@@ -36,7 +36,7 @@ export function useCreateItem(itemsApi: ItemsApi = defaultItemsApi) {
 	}));
 }
 
-export function useToggleItem(itemsApi: ItemsApi = defaultItemsApi) {
+export function useToggleItem(itemsApi: ItemsApi = useItemsApi()) {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
 		mutationFn: ({ id, completed }: { id: string; completed: boolean }) =>
@@ -55,7 +55,7 @@ export function useToggleItem(itemsApi: ItemsApi = defaultItemsApi) {
 	}));
 }
 
-export function useDeleteItem(itemsApi: ItemsApi = defaultItemsApi) {
+export function useDeleteItem(itemsApi: ItemsApi = useItemsApi()) {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
 		mutationFn: (id: string) => itemsApi.deleteItem(id),

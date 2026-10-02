@@ -5,8 +5,17 @@
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
 	import { PUBLIC_APP_TITLE } from '$env/static/public';
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
+	import { itemsApi } from '$lib/features/items/api';
+	import { setItemsApi } from '$lib/features/items/context';
+	import { healthApi } from '$lib/features/health/api';
+	import { setHealthApi } from '$lib/features/health/context';
 
 	let { children, data } = $props();
+
+	// Provide each feature's API to the whole app. Swap in fakes here (or in a test
+	// harness) to run the UI without a backend; hooks read these via context.
+	setItemsApi(itemsApi);
+	setHealthApi(healthApi);
 </script>
 
 <svelte:head>

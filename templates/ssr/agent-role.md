@@ -38,13 +38,14 @@ src/lib/features/<feature-name>/
 ├── service.test.ts     # Unit tests for the rules, run against an in-memory repository (no SQLite)
 ├── testing/            # Test doubles (in-memory repository, fake ItemsApi) and the shared contract suite
 ├── api.ts              # Client API calls (/api/... or fastapiClient) — implements contract.ts
-├── queries.ts          # TanStack Query key factory + use<Query>/use<Mutation> hooks, injected with the contract implementation
+├── context.ts          # createContext for the contract: set<Feature>Api() / use<Feature>Api() (falls back to api.ts)
+├── queries.ts          # TanStack Query key factory + use<Query>/use<Mutation> hooks, reading the contract implementation from context
 ├── components/         # Feature-specific Svelte 5 components
 └── index.ts            # Public barrel export
 ```
 
 **Why the extra layers?**
-- `contract.ts` declares an interface that `api.ts` implements and that `queries.ts` depends on instead of importing `api.ts` directly (dependency inversion). Each hook in `queries.ts` takes the implementation as an optional parameter defaulting to the real one, e.g. `useItems(initialDataGetter?, itemsApi: ItemsApi = defaultItemsApi)` — swap it for a fake in tests without touching `queries.ts`.
+- `contract.ts` declares an interface that `api.ts` implements and that `queries.ts` depends on instead of importing `api.ts` directly (dependency inversion). The implementation is provided through context: the root layout (`src/routes/+layout.svelte`) calls `setItemsApi(itemsApi)`, and each hook defaults to it, e.g. `useItems(initialDataGetter?, itemsApi: ItemsApi = useItemsApi())`. A test or component harness calls `setItemsApi(createFakeItemsApi())` to run a whole component tree against a fake, or passes an implementation to a single hook — no change to `queries.ts` either way.
 - The contract is more than the type: e.g. `toggleItem` must resolve with the full persisted item, failures reject with a readable `Error`. `testing/items-api-contract.ts` spells those promises out as tests, and `contract.test.ts` runs them against every implementation — including the fake in `testing/fake-items-api.ts`, so a test double can't drift from the real thing.
 - `service.ts` sits between the route handler (`src/routes/api/<feature>/+server.ts`) and the repository (`server.ts`). This is where authorization/business rules belong — e.g. verifying the requesting user owns a row before it's mutated or deleted. **Route handlers call the service, never `server.ts` directly.**
 - `service.ts` doesn't import `server.ts`: it declares the repository interface it needs (e.g. `ItemsRepository`) and exports a factory, `createItemsService(repo)`. `server.ts` implements the interface with Drizzle, and `src/lib/server/services.ts` (the composition root) wires the two: `export const itemsService = createItemsService(drizzleItemsRepository)`. Routes import `itemsService` from there; tests build a service over an in-memory repository, so the rules are testable without SQLite.
@@ -98,7 +99,7 @@ src/lib/features/<feature-name>/
 3. **Service**: Create `src/lib/features/your-feature/service.ts` — a repository interface plus a `createYourFeatureService(repo)` factory whose use cases enforce authorization (e.g. ownership checks) before mutating/deleting. Implement the interface in `server.ts`, wire it in `src/lib/server/services.ts`, and test the rules in `service.test.ts` with an in-memory repository.
 4. **Contract**: Create `src/lib/features/your-feature/contract.ts` with an interface describing the feature's client API surface.
 5. **API / Endpoint**: Create `src/routes/api/your-feature/+server.ts` (calling the service from `$lib/server/services`, never `server.ts` directly) and `src/lib/features/your-feature/api.ts` implementing the `contract.ts` interface.
-6. **Queries**: Create `src/lib/features/your-feature/queries.ts` with query key factory and custom query/mutation hooks, each taking the contract implementation as an optional parameter (default to the real `api.ts` implementation).
+6. **Queries**: Create `src/lib/features/your-feature/queries.ts` with query key factory and custom query/mutation hooks, each taking the contract implementation as an optional parameter that defaults to `useYourFeatureApi()` from `context.ts`. Provide the real implementation once in `src/routes/+layout.svelte` with `setYourFeatureApi(yourFeatureApi)`.
 7. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
 8. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte` (and `+page.server.ts` for server prefetching).
 9. **Navigation**: Add route link in `src/routes/(protected)/+layout.svelte`.

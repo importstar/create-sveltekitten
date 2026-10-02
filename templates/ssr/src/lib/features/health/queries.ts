@@ -1,5 +1,5 @@
 import { createQuery } from '@tanstack/svelte-query';
-import { healthApi as defaultHealthApi } from './api';
+import { useHealthApi } from './context';
 import type { HealthApi } from './contract';
 
 export const healthKeys = {
@@ -7,7 +7,7 @@ export const healthKeys = {
 	status: () => [...healthKeys.all, 'status'] as const
 };
 
-export const useHealthStatus = (healthApi: HealthApi = defaultHealthApi) => {
+export const useHealthStatus = (healthApi: HealthApi = useHealthApi()) => {
 	return createQuery(() => ({
 		queryKey: healthKeys.status(),
 		queryFn: () => healthApi.healthStatus(),

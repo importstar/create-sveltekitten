@@ -2,7 +2,7 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import { healthApi } from '$lib/features/health/api';
+	import { useHealthApi } from '$lib/features/health/context';
 	import { healthKeys, useHealthStatus } from '$lib/features/health/queries';
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
@@ -11,6 +11,8 @@
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+
+	const healthApi = useHealthApi();
 
 	// Pattern 1: SSR prefetch → TQ takes over client-side.
 	const ssrHealthQuery = createQuery(() => ({
