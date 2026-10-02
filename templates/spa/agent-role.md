@@ -58,7 +58,7 @@ src/lib/features/<feature-name>/
   ```bash
   npx @sveltejs/mcp svelte-autofixer ./src/path/to/Component.svelte
   ```
-- **Type-check before finishing**: `pnpm check`
+- **Type-check and unit-test before finishing**: `pnpm check && pnpm test:unit`
 
 ## Svelte 5 Quick Reference
 
@@ -87,7 +87,7 @@ src/lib/features/<feature-name>/
 5. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
 6. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte`.
 7. **Navigation**: Add route link in `src/routes/(protected)/+layout.svelte`.
-8. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `pnpm check`.
+8. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `pnpm check` and `pnpm test:unit`.
 
 ## Out of Scope
 

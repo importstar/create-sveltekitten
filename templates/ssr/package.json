@@ -15,6 +15,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
+		"test:unit": "vitest run",
 		"test:e2e": "pnpm build && playwright test",
 		"db:push": "drizzle-kit push",
 		"db:generate": "drizzle-kit generate",
@@ -63,6 +64,7 @@
 		"typescript-eslint": "^8.70.1",
 		"vite": "^8.3.1",
 		"vite-plugin-devtools-json": "^1.1.0",
+		"vitest": "^5.0.3",
 		"zod": "^4.6.5"
 	},
 	"dependencies": {
