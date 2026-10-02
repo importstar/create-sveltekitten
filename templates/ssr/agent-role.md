@@ -48,6 +48,7 @@ src/lib/features/<feature-name>/
 - `src/lib/features/items/` — Reference CRUD feature demonstrating schemas, the `ItemsApi` contract, a Drizzle repository (`server.ts`) behind a use-case/authorization layer (`service.ts`), query key factories, mutations, optimistic updates, and toasts.
 - `src/routes/(protected)/items/` — Page showing server prefetching (`+page.server.ts`) combined with client hydration (`initialData`).
 - `src/routes/api/items/+server.ts` — API endpoint calling `service.ts` (which enforces per-item ownership) rather than the repository directly.
+- The items example needs a SQLite session user (fullstack mode): `/api/items` returns 401 without `locals.user`, and every row is scoped to its owner. FastAPI-JWT projects keep their data in the FastAPI backend instead.
 
 ### Database Commands
 - `pnpm db:push` — Push schema changes directly to SQLite database

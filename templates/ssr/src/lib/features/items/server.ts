@@ -5,27 +5,24 @@ import type { CreateItemInput } from './schema';
 
 export type { DbItem };
 
-export async function getItems(userId?: string): Promise<DbItem[]> {
-	if (userId) {
-		return db
-			.select()
-			.from(items)
-			.where(eq(items.userId, userId))
-			.orderBy(desc(items.createdAt))
-			.all();
-	}
-	return db.select().from(items).orderBy(desc(items.createdAt)).all();
+export async function getItems(userId: string): Promise<DbItem[]> {
+	return db
+		.select()
+		.from(items)
+		.where(eq(items.userId, userId))
+		.orderBy(desc(items.createdAt))
+		.all();
 }
 
 export async function getItemById(id: string): Promise<DbItem | undefined> {
 	return db.select().from(items).where(eq(items.id, id)).get();
 }
 
-export async function insertItem(input: CreateItemInput, userId?: string): Promise<DbItem> {
+export async function insertItem(input: CreateItemInput, userId: string): Promise<DbItem> {
 	const id = Math.random().toString(36).substring(2, 9);
 	const newItem = {
 		id,
-		userId: userId ?? null,
+		userId,
 		title: input.title,
 		description: input.description ?? null,
 		completed: false,

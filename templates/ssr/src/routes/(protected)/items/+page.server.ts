@@ -2,7 +2,8 @@ import type { PageServerLoad } from './$types';
 import { getItems } from '$lib/features/items/server';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const dbItems = await getItems(locals.user?.id);
+	if (!locals.user) return { items: [] };
+	const dbItems = await getItems(locals.user.id);
 	const items = dbItems.map((item) => ({
 		id: item.id,
 		title: item.title,
