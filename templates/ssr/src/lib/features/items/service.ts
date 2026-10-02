@@ -6,7 +6,8 @@ import {
 	updateItemCompletion,
 	type DbItem
 } from './server';
-import type { CreateItemInput } from './schema';
+import { toItemDto } from './dto';
+import type { CreateItemInput, Item } from './schema';
 
 export class ItemNotFoundError extends Error {}
 export class ItemForbiddenError extends Error {}
@@ -18,23 +19,23 @@ async function assertOwnedByUser(id: string, userId: string): Promise<DbItem> {
 	return existing;
 }
 
-export async function listItems(userId: string): Promise<DbItem[]> {
-	return getItems(userId);
+export async function listItems(userId: string): Promise<Item[]> {
+	return (await getItems(userId)).map(toItemDto);
 }
 
-export async function addItem(input: CreateItemInput, userId: string): Promise<DbItem> {
-	return insertItem(input, userId);
+export async function addItem(input: CreateItemInput, userId: string): Promise<Item> {
+	return toItemDto(await insertItem(input, userId));
 }
 
 export async function toggleItemCompletion(
 	id: string,
 	completed: boolean,
 	userId: string
-): Promise<DbItem> {
+): Promise<Item> {
 	await assertOwnedByUser(id, userId);
 	const updated = await updateItemCompletion(id, completed);
 	if (!updated) throw new ItemNotFoundError();
-	return updated;
+	return toItemDto(updated);
 }
 
 export async function deleteItemForUser(id: string, userId: string): Promise<void> {

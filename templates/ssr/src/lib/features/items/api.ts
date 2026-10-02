@@ -1,15 +1,14 @@
-import type { Item, CreateItemInput } from './schema';
+import { itemSchema, type Item, type CreateItemInput } from './schema';
 import type { ItemsApi } from './contract';
+
+// The server sends `Item`s (see dto.ts). Parsing makes a broken response fail loudly
+// here instead of reaching the UI as a half-filled item.
+const itemListSchema = itemSchema.array();
 
 export async function fetchItems(): Promise<Item[]> {
 	const res = await fetch('/api/items');
 	if (!res.ok) throw new Error('Failed to fetch items');
-	const data = await res.json();
-	return data.map((d: any) => ({
-		...d,
-		description: d.description ?? undefined,
-		createdAt: typeof d.createdAt === 'string' ? d.createdAt : new Date(d.createdAt).toISOString()
-	}));
+	return itemListSchema.parse(await res.json());
 }
 
 export async function createItem(input: CreateItemInput): Promise<Item> {
@@ -22,12 +21,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
 		const err = await res.json().catch(() => ({}));
 		throw new Error(err.error || 'Failed to create item');
 	}
-	const data = await res.json();
-	return {
-		...data,
-		description: data.description ?? undefined,
-		createdAt: typeof data.createdAt === 'string' ? data.createdAt : new Date(data.createdAt).toISOString()
-	};
+	return itemSchema.parse(await res.json());
 }
 
 export async function toggleItem(id: string, completed: boolean): Promise<Item> {
@@ -40,12 +34,7 @@ export async function toggleItem(id: string, completed: boolean): Promise<Item> 
 		const err = await res.json().catch(() => ({}));
 		throw new Error(err.error || 'Failed to update item');
 	}
-	const data = await res.json();
-	return {
-		...data,
-		description: data.description ?? undefined,
-		createdAt: typeof data.createdAt === 'string' ? data.createdAt : new Date(data.createdAt).toISOString()
-	};
+	return itemSchema.parse(await res.json());
 }
 
 export async function deleteItem(id: string): Promise<void> {
