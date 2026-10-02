@@ -1,6 +1,6 @@
 import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 import { itemsApi as defaultItemsApi } from './api';
-import type { ItemsApi } from './port';
+import type { ItemsApi } from './contract';
 import type { CreateItemInput, Item } from './schema';
 import { toast } from 'svelte-sonner';
 

@@ -30,17 +30,17 @@ Every domain feature is completely self-contained in `src/lib/features/<feature-
 ```text
 src/lib/features/<feature-name>/
 ├── schema.ts           # Zod schemas (input validation) & inferred TypeScript types
-├── port.ts             # Interface for the feature's API surface (e.g. `ItemsApi`)
-├── api.ts              # Typed API calls via client (or mock fallback) — implements port.ts
-├── queries.ts          # TanStack Query key factory + use<Query>/use<Mutation> hooks, injected with the port
+├── contract.ts         # Interface for the feature's API surface (e.g. `ItemsApi`)
+├── api.ts              # Typed API calls via client (or mock fallback) — implements contract.ts
+├── queries.ts          # TanStack Query key factory + use<Query>/use<Mutation> hooks, injected with the contract implementation
 ├── components/         # Feature-specific Svelte 5 components
 └── index.ts            # Public barrel export
 ```
 
-**Why `port.ts`?** `queries.ts` depends on the `port.ts` interface instead of importing `api.ts` directly (dependency inversion). Each hook takes the implementation as an optional parameter defaulting to the real one, e.g. `useItems(initialDataGetter?, itemsApi: ItemsApi = defaultItemsApi)` — swap it for a fake in tests without touching `queries.ts`.
+**Why `contract.ts`?** `queries.ts` depends on the `contract.ts` interface instead of importing `api.ts` directly (dependency inversion). Each hook takes the implementation as an optional parameter defaulting to the real one, e.g. `useItems(initialDataGetter?, itemsApi: ItemsApi = defaultItemsApi)` — swap it for a fake in tests without touching `queries.ts`.
 
 ### Canonical Reference Example
-- `src/lib/features/items/` — Reference CRUD feature demonstrating schemas, the `ItemsApi` port, an in-memory mock implementation, query key factories, mutations, optimistic updates, and toasts.
+- `src/lib/features/items/` — Reference CRUD feature demonstrating schemas, the `ItemsApi` contract, an in-memory mock implementation, query key factories, mutations, optimistic updates, and toasts.
 - `src/routes/(protected)/items/` — Client-side route demonstrating reactive TanStack Query state handling.
 
 ### How to Erase / Replace the Example Feature
@@ -81,9 +81,9 @@ src/lib/features/<feature-name>/
 ## Adding a New Feature — Checklist
 
 1. **Schema**: Create `src/lib/features/your-feature/schema.ts` with Zod validation schemas and exported types.
-2. **Port**: Create `src/lib/features/your-feature/port.ts` with an interface describing the feature's API surface.
-3. **API**: Create `src/lib/features/your-feature/api.ts` with typed endpoint functions implementing the `port.ts` interface.
-4. **Queries**: Create `src/lib/features/your-feature/queries.ts` with query key factory and custom query/mutation hooks, each taking the port implementation as an optional parameter (default to the real `api.ts` implementation).
+2. **Contract**: Create `src/lib/features/your-feature/contract.ts` with an interface describing the feature's API surface.
+3. **API**: Create `src/lib/features/your-feature/api.ts` with typed endpoint functions implementing the `contract.ts` interface.
+4. **Queries**: Create `src/lib/features/your-feature/queries.ts` with query key factory and custom query/mutation hooks, each taking the contract implementation as an optional parameter (default to the real `api.ts` implementation).
 5. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
 6. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte`.
 7. **Navigation**: Add route link in `src/routes/(protected)/+layout.svelte`.

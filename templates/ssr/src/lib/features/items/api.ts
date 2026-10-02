@@ -1,5 +1,5 @@
 import type { Item, CreateItemInput } from './schema';
-import type { ItemsApi } from './port';
+import type { ItemsApi } from './contract';
 
 export async function fetchItems(): Promise<Item[]> {
 	const res = await fetch('/api/items');

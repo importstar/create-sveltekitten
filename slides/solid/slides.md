@@ -109,7 +109,7 @@ flowchart LR
   subgraph Client["Browser"]
     P["+page.svelte"] --> C["components/*.svelte"]
     C --> Q["queries.ts"]
-    Q --> PORT[["«port» ItemsApi"]]
+    Q --> PORT[["«contract» ItemsApi"]]
     A["api.ts"] -. implements .-> PORT
   end
   A -- "fetch /api/items" --> R
@@ -127,7 +127,7 @@ flowchart LR
 <!--
 ภาพนี้คือแผนที่ที่เราจะใช้ตลอดวันนี้ครับ ลองเดินตาม request หนึ่งครั้งด้วยกัน
 
-สมมติผู้ใช้กด checkbox ใน item-card ตัว component จะเรียก hook useToggleItem ใน queries.ts ตัว hook ไม่ได้รู้จัก fetch โดยตรง มันรู้จักแค่ interface ItemsApi ใน port.ts ส่วนตัวที่ implement จริงคือ api.ts ซึ่งยิง fetch ไปที่ /api/items
+สมมติผู้ใช้กด checkbox ใน item-card ตัว component จะเรียก hook useToggleItem ใน queries.ts ตัว hook ไม่ได้รู้จัก fetch โดยตรง มันรู้จักแค่ interface ItemsApi ใน contract.ts ส่วนตัวที่ implement จริงคือ api.ts ซึ่งยิง fetch ไปที่ /api/items
 
 พอข้ามมาฝั่ง server ตัว route handler จะรับ request แล้วส่งต่อให้ service.ts ซึ่งเป็นที่ตรวจว่าผู้ใช้เป็นเจ้าของ item จริงไหม จากนั้น service ค่อยเรียก server.ts ซึ่งเป็น repository ที่คุยกับ Drizzle และ SQLite
 
@@ -601,7 +601,7 @@ class: section
 <div class="grid grid-cols-[1fr_1fr] gap-6 mt-4">
 <div>
 
-<<< @/../../templates/ssr/src/lib/features/items/port.ts
+<<< @/../../templates/ssr/src/lib/features/items/contract.ts
 
 <p class="muted text-xs mt-2">Imported live from the template.</p>
 
@@ -624,7 +624,7 @@ class: section
 </div>
 </div>
 
-<SourceRef path="templates/ssr/src/lib/features/items/port.ts" />
+<SourceRef path="templates/ssr/src/lib/features/items/contract.ts" />
 
 <!--
 นี่คือ interface ItemsApi ของเราครับ ดึงมาจากไฟล์จริงใน template เลย ถ้า template เปลี่ยน สไลด์นี้ก็เปลี่ยนตาม
@@ -715,7 +715,7 @@ onSuccess: (updatedItem) => {
 # Guarding LSP: contract tests <Verdict kind="proposal" />
 
 ```ts
-// features/items/port.contract.ts
+// features/items/contract.test.ts
 export function describeItemsApiContract(name: string, makeApi: () => ItemsApi) {
   describe(`${name} honours ItemsApi`, () => {
     it('toggleItem resolves with the persisted item, not a stub', async () => {
@@ -910,8 +910,8 @@ class: section
 </div>
 <div class="card" v-click>
 <h3>Now</h3>
-<div class="flow"><span class="isp-box">queries.ts</span><span class="flow-arrow">→</span><span class="isp-box flow-port">«port» ItemsApi</span><span class="flow-arrow">←</span><span class="isp-box">api.ts</span></div>
-<p class="muted text-xs mt-3"><code>api.ts</code> implements the port (and calls <code>fetch</code>).</p>
+<div class="flow"><span class="isp-box">queries.ts</span><span class="flow-arrow">→</span><span class="isp-box flow-port">«contract» ItemsApi</span><span class="flow-arrow">←</span><span class="isp-box">api.ts</span></div>
+<p class="muted text-xs mt-3"><code>api.ts</code> implements the contract (and calls <code>fetch</code>).</p>
 </div>
 </div>
 
@@ -924,19 +924,19 @@ class: section
 
 ภาพซ้ายคือก่อน v0.3.3 queries.ts import api.ts ตรง ๆ ลูกศรชี้จากนโยบายไปหารายละเอียด
 
-ภาพขวาคือตอนนี้ queries.ts พึ่ง ItemsApi ใน port.ts ส่วน api.ts ต้องมา implement interface นั้น
+ภาพขวาคือตอนนี้ queries.ts พึ่ง ItemsApi ใน contract.ts ส่วน api.ts ต้องมา implement interface นั้น
 
 (คลิก) คำว่า inversion ก็คือลูกศรระหว่าง queries กับ api มันกลับทิศครับ จากเดิมที่นโยบายชี้ไปหารายละเอียด ตอนนี้รายละเอียดชี้กลับมาหา interface ของนโยบาย
 -->
 
 ---
 
-# In our template: the `ItemsApi` port <Verdict kind="follows" />
+# In our template: the `ItemsApi` contract <Verdict kind="follows" />
 
 ```ts {2-3|13-16|19|all}
 // features/items/queries.ts
 import { itemsApi as defaultItemsApi } from './api';
-import type { ItemsApi } from './port';
+import type { ItemsApi } from './contract';
 import type { CreateItemInput, Item } from './schema';
 
 export const itemKeys = {
@@ -1114,7 +1114,7 @@ DIP (Dependency Inversion Principle) ของเรายังไปไม่�
 ```ts
 // features/items/context.ts
 import { createContext } from 'svelte';
-import type { ItemsApi } from './port';
+import type { ItemsApi } from './contract';
 export const [getItemsApi, setItemsApi] = createContext<ItemsApi>();
 
 // queries.ts
@@ -1362,7 +1362,7 @@ class: compact
 | 1 | `schema.ts` — Zod schemas + inferred types | <span class="pill">L</span> the contract's shape |
 | 2 | `server.ts` — repository, **no rules** | <span class="pill">S</span> |
 | 3 | `service.ts` — use cases + authorization | <span class="pill">S</span> <span class="pill">D</span> (inject the repo) |
-| 4 | `port.ts` — the client API interface | <span class="pill">D</span> <span class="pill">I</span> |
+| 4 | `contract.ts` — the client API interface | <span class="pill">D</span> <span class="pill">I</span> |
 | 5 | `+server.ts` calls **service**, `api.ts` implements **port** | <span class="pill">S</span> <span class="pill">L</span> |
 | 6 | `queries.ts` — key factory + hooks on the port | <span class="pill">O</span> <span class="pill">D</span> <span class="pill">I</span> |
 | 7 | `components/` — use only the hooks you need | <span class="pill">I</span> |

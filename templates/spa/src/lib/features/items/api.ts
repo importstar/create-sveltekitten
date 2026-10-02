@@ -1,5 +1,5 @@
 import type { Item, CreateItemInput } from './schema';
-import type { ItemsApi } from './port';
+import type { ItemsApi } from './contract';
 
 /**
  * In-memory store providing an immediate working example out-of-the-box.
