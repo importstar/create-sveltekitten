@@ -31,13 +31,17 @@ Every domain feature is completely self-contained in `src/lib/features/<feature-
 src/lib/features/<feature-name>/
 ├── schema.ts           # Zod schemas (input validation) & inferred TypeScript types
 ├── contract.ts         # Interface for the feature's API surface (e.g. `ItemsApi`)
+├── contract.test.ts    # Runs the shared contract suite (testing/items-api-contract.ts) against every implementation
 ├── api.ts              # Typed API calls via client (or mock fallback) — implements contract.ts
 ├── queries.ts          # TanStack Query key factory + use<Query>/use<Mutation> hooks, injected with the contract implementation
+├── testing/            # Fake ItemsApi and the shared contract suite
 ├── components/         # Feature-specific Svelte 5 components
 └── index.ts            # Public barrel export
 ```
 
 **Why `contract.ts`?** `queries.ts` depends on the `contract.ts` interface instead of importing `api.ts` directly (dependency inversion). Each hook takes the implementation as an optional parameter defaulting to the real one, e.g. `useItems(initialDataGetter?, itemsApi: ItemsApi = defaultItemsApi)` — swap it for a fake in tests without touching `queries.ts`.
+
+The contract is more than the type: e.g. `toggleItem` must resolve with the full persisted item, failures reject with a readable `Error`. `testing/items-api-contract.ts` spells those promises out as tests, and `contract.test.ts` runs them against every implementation — including the fake in `testing/fake-items-api.ts`, so a test double can't drift from the real thing.
 
 ### Canonical Reference Example
 - `src/lib/features/items/` — Reference CRUD feature demonstrating schemas, the `ItemsApi` contract, an in-memory mock implementation, query key factories, mutations, optimistic updates, and toasts.

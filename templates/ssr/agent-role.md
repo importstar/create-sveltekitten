@@ -32,10 +32,11 @@ Every domain feature is completely self-contained in `src/lib/features/<feature-
 src/lib/features/<feature-name>/
 ├── schema.ts           # Zod schemas (input validation) & inferred TypeScript types
 ├── contract.ts         # Interface for the feature's client API surface (e.g. `ItemsApi`)
+├── contract.test.ts    # Runs the shared contract suite (testing/items-api-contract.ts) against every implementation
 ├── server.ts           # Repository: raw Drizzle database queries only — no business rules — implements service.ts's repository interface
 ├── service.ts          # Use-case layer: repository interface + create<Feature>Service(repo), enforces authorization/business rules
 ├── service.test.ts     # Unit tests for the rules, run against an in-memory repository (no SQLite)
-├── testing/            # Test doubles (e.g. in-memory repository)
+├── testing/            # Test doubles (in-memory repository, fake ItemsApi) and the shared contract suite
 ├── api.ts              # Client API calls (/api/... or fastapiClient) — implements contract.ts
 ├── queries.ts          # TanStack Query key factory + use<Query>/use<Mutation> hooks, injected with the contract implementation
 ├── components/         # Feature-specific Svelte 5 components
@@ -44,6 +45,7 @@ src/lib/features/<feature-name>/
 
 **Why the extra layers?**
 - `contract.ts` declares an interface that `api.ts` implements and that `queries.ts` depends on instead of importing `api.ts` directly (dependency inversion). Each hook in `queries.ts` takes the implementation as an optional parameter defaulting to the real one, e.g. `useItems(initialDataGetter?, itemsApi: ItemsApi = defaultItemsApi)` — swap it for a fake in tests without touching `queries.ts`.
+- The contract is more than the type: e.g. `toggleItem` must resolve with the full persisted item, failures reject with a readable `Error`. `testing/items-api-contract.ts` spells those promises out as tests, and `contract.test.ts` runs them against every implementation — including the fake in `testing/fake-items-api.ts`, so a test double can't drift from the real thing.
 - `service.ts` sits between the route handler (`src/routes/api/<feature>/+server.ts`) and the repository (`server.ts`). This is where authorization/business rules belong — e.g. verifying the requesting user owns a row before it's mutated or deleted. **Route handlers call the service, never `server.ts` directly.**
 - `service.ts` doesn't import `server.ts`: it declares the repository interface it needs (e.g. `ItemsRepository`) and exports a factory, `createItemsService(repo)`. `server.ts` implements the interface with Drizzle, and `src/lib/server/services.ts` (the composition root) wires the two: `export const itemsService = createItemsService(drizzleItemsRepository)`. Routes import `itemsService` from there; tests build a service over an in-memory repository, so the rules are testable without SQLite.
 
