@@ -2,7 +2,7 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import * as api from '$lib/features/health/api';
+	import { healthApi } from '$lib/features/health/api';
 	import { healthKeys, useHealthStatus } from '$lib/features/health/queries';
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
@@ -15,7 +15,7 @@
 	// Pattern 1: SSR prefetch → TQ takes over client-side.
 	const ssrHealthQuery = createQuery(() => ({
 		queryKey: [...healthKeys.all, 'ssr'],
-		queryFn: () => api.healthStatus(),
+		queryFn: () => healthApi.healthStatus(),
 		initialData: data.health ?? undefined,
 		staleTime: 1000 * 60,
 		refetchInterval: 1000 * 60
