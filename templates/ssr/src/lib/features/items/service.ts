@@ -1,9 +1,21 @@
 import type { DbItem } from '$lib/server/db/schema';
+import { ApiError } from '$lib/utils/api-core';
 import { toItemDto } from './dto';
 import type { CreateItemInput, Item } from './schema';
 
-export class ItemNotFoundError extends Error {}
-export class ItemForbiddenError extends Error {}
+// Each error carries its HTTP status, so routes map any of them with toErrorResponse()
+// and a new error needs no change in the handlers.
+export class ItemNotFoundError extends ApiError {
+	constructor() {
+		super('Item not found', 404, null);
+	}
+}
+
+export class ItemForbiddenError extends ApiError {
+	constructor() {
+		super('Forbidden', 403, null);
+	}
+}
 
 /**
  * What the service needs from storage. `server.ts` implements it with Drizzle;

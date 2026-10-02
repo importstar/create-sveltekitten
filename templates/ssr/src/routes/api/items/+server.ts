@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { ItemForbiddenError, ItemNotFoundError } from '$lib/features/items/service';
 import { itemsService } from '$lib/server/services';
+import { toErrorResponse } from '$lib/server/http';
 import { createItemSchema } from '$lib/features/items/schema';
 
 // Items belong to a SQLite session user. Without one (anonymous, or FastAPI-JWT mode)
@@ -25,8 +25,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 		const created = await itemsService.addItem(result.data, locals.user.id);
 		return json(created, { status: 201 });
-	} catch {
-		return json({ error: 'Failed to create item' }, { status: 500 });
+	} catch (err) {
+		return toErrorResponse(err, 'Failed to create item');
 	}
 };
 
@@ -41,9 +41,7 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 		const updated = await itemsService.toggleItemCompletion(id, completed, locals.user.id);
 		return json(updated);
 	} catch (err) {
-		if (err instanceof ItemNotFoundError) return json({ error: 'Item not found' }, { status: 404 });
-		if (err instanceof ItemForbiddenError) return json({ error: 'Forbidden' }, { status: 403 });
-		return json({ error: 'Failed to update item' }, { status: 500 });
+		return toErrorResponse(err, 'Failed to update item');
 	}
 };
 
@@ -57,8 +55,6 @@ export const DELETE: RequestHandler = async ({ request, url, locals }) => {
 		await itemsService.deleteItemForUser(id, locals.user.id);
 		return json({ success: true });
 	} catch (err) {
-		if (err instanceof ItemNotFoundError) return json({ error: 'Item not found' }, { status: 404 });
-		if (err instanceof ItemForbiddenError) return json({ error: 'Forbidden' }, { status: 403 });
-		return json({ error: 'Failed to delete item' }, { status: 500 });
+		return toErrorResponse(err, 'Failed to delete item');
 	}
 };
