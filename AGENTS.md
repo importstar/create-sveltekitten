@@ -27,6 +27,7 @@ src/
     index.ts        — codemod registry + runner
 templates/
   ssr/              — SSR template
+  ssr-fullstack/    — files that replace their ssr/ counterpart when ssrMode is fullstack
   spa/              — SPA template
 dist/               — compiled output (committed, enables pnpx github: usage)
 ```
@@ -55,7 +56,7 @@ Never change a template file without a matching codemod entry — existing proje
 
 You must always do all these steps — never skip any:
 
-1. **Edit** the file under `templates/ssr/` or `templates/spa/`
+1. **Edit** the file under `templates/ssr/` or `templates/spa/`. A file that exists in both `ssr/` and `ssr-fullstack/` must be fixed in the copy for the mode that has the bug; the codemod sets `ssrMode` to target only that mode.
 2. **Add a codemod** — an entry in the `codemods` array in `src/codemods/index.ts`, **at the end**, so existing projects can receive the fix
 3. **Bump the version** in `package.json` (`npm version patch` / `minor` / `major`)
 4. `pnpm build && npm publish`
@@ -69,6 +70,8 @@ You must always do all these steps — never skip any:
   transforms: [
     {
       file: 'relative/path/from/project/root.ts',
+      template: 'ssr',        // optional: 'ssr' | 'spa'
+      ssrMode: 'fullstack',   // optional: 'fullstack' | 'fastapi'
       transform: (content: string) => content.replaceAll('old', 'new'),
     },
   ],

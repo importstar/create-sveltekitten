@@ -11,6 +11,7 @@ src/
 templates/
   ssr/              — SSR template files
   spa/              — SPA template files
+  ssr-fullstack/    — files that replace their ssr/ counterpart when ssrMode is fullstack
 ```
 
 ## Version tracking

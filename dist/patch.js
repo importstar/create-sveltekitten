@@ -32,6 +32,9 @@ export async function patch(latestVersion) {
             if (t.template && t.template !== template) {
                 continue;
             }
+            if (t.ssrMode && t.ssrMode !== config.ssrMode) {
+                continue;
+            }
             const filePath = join(process.cwd(), t.file);
             let oldContent;
             let firstEncounter = false;

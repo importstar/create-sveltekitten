@@ -5,6 +5,8 @@ export interface FileTransform {
     create?: boolean;
     /** Restrict this transform to a specific template type. Skipped when template doesn't match. */
     template?: 'ssr' | 'spa';
+    /** Restrict this transform to a specific SSR mode. Skipped when the project's ssrMode doesn't match (or is unset). */
+    ssrMode?: 'fullstack' | 'fastapi';
     transform: (content: string) => string;
 }
 export interface Codemod {
