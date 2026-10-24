@@ -74,6 +74,7 @@ src/lib/features/<feature-name>/
   npx @sveltejs/mcp svelte-autofixer ./src/path/to/Component.svelte
   ```
 - **Type-check and unit-test before finishing**: `pnpm check && pnpm test:unit`
+- **E2E**: `pnpm test:e2e` installs the browser Playwright needs on first run (network required once), then builds and runs `e2e/`.
 
 ## Svelte 5 Quick Reference
 

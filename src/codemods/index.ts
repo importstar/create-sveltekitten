@@ -26,6 +26,7 @@ import v0_3_18 from './v0.3.18.js';
 import v0_3_19 from './v0.3.19.js';
 import v0_3_20 from './v0.3.20.js';
 import v0_3_21 from './v0.3.21.js';
+import v0_3_22 from './v0.3.22.js';
 
 export interface FileTransform {
 	/** Relative path from project root, e.g. "src/lib/auth.ts" */
@@ -74,7 +75,8 @@ export const codemods: Codemod[] = [
 	v0_3_18,
 	v0_3_19,
 	v0_3_20,
-	v0_3_21
+	v0_3_21,
+	v0_3_22
 ];
 
 function parseVersion(v: string): [number, number, number] {
