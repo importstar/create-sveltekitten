@@ -66,6 +66,7 @@ src/lib/features/<feature-name>/
 ## Key Constraints
 
 - **Auth support**: Supports both SQLite session auth (`session_id` cookie) and FastAPI JWT auth (`access_token` / `refresh_token`).
+- **Users**: login never creates users, in either mode. In fullstack mode, create accounts with `pnpm user:create <username>`.
 - **Protected pages must live inside `(protected)/`** — the route guard checks `(protected)` in the route ID.
 - **Svelte 5 runes only** — no legacy Svelte 4 syntax.
 - **Run `svelte-autofixer` before finalizing any `.svelte` file**:

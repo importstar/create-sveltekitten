@@ -43,6 +43,14 @@ PUBLIC_APP_TITLE=my-app
 BACKEND_API_URL=http://localhost:9000
 ```
 
+**Fullstack mode: create the first user.** The SSR template asks for a backend architecture. In SvelteKit Full-Stack mode, users live in the local SQLite database and `/login` never creates them. Create each account from the project folder. The script prompts for the password without echoing it:
+
+```bash
+pnpm user:create admin
+```
+
+In CI, pipe the password instead: `printf '%s\n' "$PASSWORD" | pnpm user:create admin`. The command exits 1 if the username already exists.
+
 **After backend changes** — regenerate OpenAPI types:
 
 ```bash

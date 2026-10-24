@@ -5,6 +5,16 @@ import pino from 'pino';
 const createLogger = () => {
 	return pino({
 		level: dev ? 'debug' : 'info',
+		redact: [
+			'password',
+			'*.password',
+			'cookie',
+			'*.cookie',
+			'authorization',
+			'*.authorization',
+			'req.headers.cookie',
+			'req.headers.authorization'
+		],
 		transport: dev
 			? {
 					target: 'pino-pretty',

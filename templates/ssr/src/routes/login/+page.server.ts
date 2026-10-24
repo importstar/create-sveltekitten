@@ -6,9 +6,7 @@ import { loginSchema } from '$lib/features/login/schema';
 import { logger } from '$lib/logger';
 import { setAuthTokens, isTokenExpired } from '$lib/utils/auth';
 import { db } from '$lib/server/db';
-import { users } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
-import { hashPassword, verifyPassword } from '$lib/server/auth/password';
+import { authenticate } from '$lib/server/auth/users';
 import { createSession, generateSessionToken, setSessionCookie } from '$lib/server/auth/session';
 
 export const load = (async ({ cookies, locals }) => {
@@ -29,8 +27,6 @@ export const actions: Actions = {
 	default: async ({ request, locals, cookies }) => {
 		const { fastapiClient } = locals;
 		const form = await superValidate(request, zod4(loginSchema));
-
-		logger.info({ formData: form.data }, 'Login form data');
 
 		if (!form.valid) {
 			return { form };
@@ -59,47 +55,22 @@ export const actions: Actions = {
 			}
 		}
 
-		// Local Full-Stack SQLite Authentication
 		try {
-			const existingUser = db
-				.select()
-				.from(users)
-				.where(eq(users.username, form.data.username))
-				.get();
-
-			if (!existingUser) {
-				// Out-of-the-box user creation for initial onboarding
-				const newUserId = crypto.randomUUID();
-				const passwordHash = hashPassword(form.data.password);
-				db.insert(users)
-					.values({
-						id: newUserId,
-						username: form.data.username,
-						passwordHash,
-						createdAt: new Date()
-					})
-					.run();
-
-				const token = generateSessionToken();
-				const session = await createSession(token, newUserId);
-				setSessionCookie(cookies, token, session.expiresAt);
-			} else {
-				const valid = verifyPassword(form.data.password, existingUser.passwordHash);
-				if (!valid) {
-					return message(
-						form,
-						{
-							type: 'error',
-							text: 'Invalid username or password.'
-						},
-						{ status: 400 }
-					);
-				}
-
-				const token = generateSessionToken();
-				const session = await createSession(token, existingUser.id);
-				setSessionCookie(cookies, token, session.expiresAt);
+			const user = await authenticate(db, form.data.username, form.data.password);
+			if (!user) {
+				return message(
+					form,
+					{
+						type: 'error',
+						text: 'Invalid username or password.'
+					},
+					{ status: 400 }
+				);
 			}
+
+			const token = generateSessionToken();
+			const session = await createSession(token, user.id);
+			setSessionCookie(cookies, token, session.expiresAt);
 		} catch (err) {
 			logger.inspect('Local login error', err);
 			return message(
