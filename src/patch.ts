@@ -7,6 +7,7 @@ import { getApplicableCodemods } from './codemods/index.js';
 interface SveltekittenConfig {
 	version: string;
 	template: string;
+	ssrMode?: 'fullstack' | 'fastapi';
 }
 
 export async function patch(latestVersion: string) {
@@ -58,6 +59,9 @@ export async function patch(latestVersion: string) {
 		p.log.step(`Codemod ${codemod.from} → ${codemod.to}`);
 		for (const t of codemod.transforms) {
 			if (t.template && t.template !== template) {
+				continue;
+			}
+			if (t.ssrMode && t.ssrMode !== config.ssrMode) {
 				continue;
 			}
 			const filePath = join(process.cwd(), t.file);

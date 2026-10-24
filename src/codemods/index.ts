@@ -24,6 +24,7 @@ import v0_3_16 from './v0.3.16.js';
 import v0_3_17 from './v0.3.17.js';
 import v0_3_18 from './v0.3.18.js';
 import v0_3_19 from './v0.3.19.js';
+import v0_3_20 from './v0.3.20.js';
 
 export interface FileTransform {
 	/** Relative path from project root, e.g. "src/lib/auth.ts" */
@@ -32,6 +33,8 @@ export interface FileTransform {
 	create?: boolean;
 	/** Restrict this transform to a specific template type. Skipped when template doesn't match. */
 	template?: 'ssr' | 'spa';
+	/** Restrict this transform to a specific SSR mode. Skipped when the project's ssrMode doesn't match (or is unset). */
+	ssrMode?: 'fullstack' | 'fastapi';
 	transform: (content: string) => string;
 }
 
@@ -68,7 +71,8 @@ export const codemods: Codemod[] = [
 	v0_3_16,
 	v0_3_17,
 	v0_3_18,
-	v0_3_19
+	v0_3_19,
+	v0_3_20
 ];
 
 function parseVersion(v: string): [number, number, number] {

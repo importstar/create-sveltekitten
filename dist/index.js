@@ -166,6 +166,9 @@ async function main() {
         await mkdir(targetDir, { recursive: true });
         const templateDir = join(TEMPLATES_DIR, template);
         await cp(templateDir, targetDir, { recursive: true, force: true });
+        if (template === 'ssr' && ssrMode === 'fullstack') {
+            await cp(join(TEMPLATES_DIR, 'ssr-fullstack'), targetDir, { recursive: true, force: true });
+        }
         await materializeGitignore(targetDir);
         const replacements = {
             '{{PROJECT_NAME}}': projectName,

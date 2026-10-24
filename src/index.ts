@@ -179,6 +179,9 @@ async function main() {
 
 		const templateDir = join(TEMPLATES_DIR, template as string);
 		await cp(templateDir, targetDir, { recursive: true, force: true });
+		if (template === 'ssr' && ssrMode === 'fullstack') {
+			await cp(join(TEMPLATES_DIR, 'ssr-fullstack'), targetDir, { recursive: true, force: true });
+		}
 		await materializeGitignore(targetDir);
 
 		const replacements: Record<string, string> = {
