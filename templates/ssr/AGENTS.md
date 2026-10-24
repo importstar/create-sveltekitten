@@ -37,6 +37,7 @@ Only call after user confirms they want one. NEVER call if code was written to p
 - **Full-Stack & Database**: SQLite via `better-sqlite3` + `drizzle-orm` in `src/lib/server/db/`.
 - **Database CLI**: `pnpm db:push` pushes schema changes to `sqlite.db`; `pnpm db:studio` inspects data.
 - **Auth**: Supports server-side cookie sessions (`session_id`) and FastAPI JWT proxying (`access_token` / `refresh_token`).
+- **Users**: login never creates users, in either mode. In fullstack mode, create accounts with `pnpm user:create <username>`.
 - Protected pages go inside `src/routes/(protected)/` — the auth guard runs automatically via `hooks.server.ts`.
 - Use `event.locals.user` / `event.locals.session` for session details; `event.locals.fastapiClient` for FastAPI calls.
 - Logger: `import { logger } from '$lib/logger'` — use instead of `console.log`.

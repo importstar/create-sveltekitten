@@ -70,6 +70,13 @@ async function applyReplacements(targetDir, replacements) {
         }
     }
 }
+/** The overlay copies files only, so the fullstack-only package.json script is added here. */
+async function addFullstackPackageEntries(targetDir) {
+    const pkgPath = join(targetDir, 'package.json');
+    const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
+    pkg.scripts['user:create'] = 'tsx scripts/user-create.ts';
+    await writeFile(pkgPath, JSON.stringify(pkg, null, '\t') + '\n');
+}
 async function main() {
     const version = await getVersion();
     p.intro(`create-sveltekitten v${version}`);
@@ -168,6 +175,7 @@ async function main() {
         await cp(templateDir, targetDir, { recursive: true, force: true });
         if (template === 'ssr' && ssrMode === 'fullstack') {
             await cp(join(TEMPLATES_DIR, 'ssr-fullstack'), targetDir, { recursive: true, force: true });
+            await addFullstackPackageEntries(targetDir);
         }
         await materializeGitignore(targetDir);
         const replacements = {
@@ -195,6 +203,7 @@ async function main() {
         p.note([
             `cd ${projectName}`,
             'pnpm install',
+            'pnpm user:create admin',
             'pnpm dev'
         ].join('\n'), 'Next steps', dimNote);
         p.note([
