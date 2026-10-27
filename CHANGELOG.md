@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.22
+
+`pnpm test:e2e` now runs `playwright install chromium` first. A fresh machine, or a Playwright upgrade, used to fail at browser launch until someone ran that command by hand, and neither template said so. When the browser is already installed the step finishes in about a second and needs no network. Applies to SSR and SPA projects.
+
+Update existing projects with:
+
+```bash
+pnpx create-sveltekitten patch
+```
+
+The patch updates the `test:e2e` script only if it is unchanged from 0.3.21.
+
 ## 0.3.21
 
 **Security fix.** In fullstack SSR projects, `/login` created a new account for any username it did not know, so anyone could sign in with any name. FastAPI (BFF) projects had the same hole: when the FastAPI login was skipped or failed, `/login` fell back to the local SQLite database and created the account there. Every SSR login also logged the submitted form, password included, at `info` level, which reaches production logs.
