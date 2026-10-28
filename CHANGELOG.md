@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.1.2
+
+**Security fix. After this patch every signed-in user has to log in again.**
+
+SSR full-stack projects stored the session token from the `session_id` cookie as the `id` of its row in the `sessions` table. Anyone who could read the database (a backup, a copied `sqlite.db`, a SQL injection elsewhere) could use those ids as cookies and sign in as any user. The table now stores `sha256(token)`. The cookie still carries the raw token. `createSession`, `validateSessionToken` and `invalidateSession` still take the raw token and hash it inside, using the new `hashSessionToken(token)` in `src/lib/server/auth/session.ts`.
+
+Sessions created before the patch hold the raw token, so they no longer match. `validateSessionToken` returns no session for them, the auth guard clears the cookie, and the user is sent to `/login`. Nothing fails with a 500. The old rows stay in the table and are never matched again; delete them with `DELETE FROM sessions;` if you want them gone.
+
+A new `src/lib/server/auth/session.test.ts` covers storing, validating and invalidating hashed sessions, and rejecting an old unhashed one.
+
+Update existing projects with:
+
+```bash
+pnpx create-sveltekitten patch
+```
+
+The patch replaces `src/lib/server/auth/session.ts` only if it is unchanged from 1.1.1. If you edited it, hash the token with `sha256` wherever it is written to or looked up in `sessions.id`.
+
 ## 1.1.1
 
 New items in SSR full-stack projects get a UUID v4 id from `crypto.randomUUID()`. `insertItem` used `Math.random().toString(36)`, a 7-character id that is predictable and can collide. Existing rows keep their ids.

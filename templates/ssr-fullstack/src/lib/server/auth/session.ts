@@ -2,7 +2,7 @@ import { db } from '$lib/server/db';
 import { sessions, users, type User, type Session } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import type { Cookies } from '@sveltejs/kit';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 
 export const SESSION_COOKIE_NAME = 'session_id';
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
@@ -11,12 +11,20 @@ export function generateSessionToken(): string {
 	return randomBytes(32).toString('hex');
 }
 
+/**
+ * The sessions table stores this hash, never the token, so a leaked database cannot be
+ * replayed as session cookies. Every function below takes the raw token from the cookie.
+ */
+export function hashSessionToken(token: string): string {
+	return createHash('sha256').update(token).digest('hex');
+}
+
 export async function createSession(token: string, userId: string): Promise<Session> {
 	const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
 	const [session] = await db
 		.insert(sessions)
 		.values({
-			id: token,
+			id: hashSessionToken(token),
 			userId,
 			expiresAt
 		})
@@ -39,7 +47,7 @@ export async function validateSessionToken(
 			})
 			.from(sessions)
 			.innerJoin(users, eq(sessions.userId, users.id))
-			.where(eq(sessions.id, token))
+			.where(eq(sessions.id, hashSessionToken(token)))
 			.get();
 
 		if (!result) {
@@ -69,9 +77,9 @@ export async function validateSessionToken(
 	}
 }
 
-export async function invalidateSession(sessionId: string): Promise<void> {
+export async function invalidateSession(token: string): Promise<void> {
 	try {
-		await db.delete(sessions).where(eq(sessions.id, sessionId));
+		await db.delete(sessions).where(eq(sessions.id, hashSessionToken(token)));
 	} catch {
 		// ignore
 	}
