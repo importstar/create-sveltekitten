@@ -1,0 +1,7 @@
+{
+  "id": "better-sqlite3-bun-1.2.23-debian",
+  "hostEligible": false,
+  "pass": false,
+  "command": "docker run oven/bun:1.2.23 (apt, bun add better-sqlite3@13.0.3, bun check.mjs)",
+  "output": "installed better-sqlite3@13.0.3\npanic(main thread): NAPI FATAL ERROR: Error::New napi_get_last_error_info\nWSL Kernel v6.6.87 | glibc v2.36\nexit 132"
+}

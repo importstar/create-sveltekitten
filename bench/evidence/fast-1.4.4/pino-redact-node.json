@@ -1,0 +1,8 @@
+{
+  "id": "pino-redact-node",
+  "started": "2026-10-28T16:52:10.582Z",
+  "hostEligible": false,
+  "pass": true,
+  "command": "docker run node:24.20.0-bookworm-slim npm install --silent pino@10 && node /check.mjs",
+  "output": "pino-ok\n\n"
+}

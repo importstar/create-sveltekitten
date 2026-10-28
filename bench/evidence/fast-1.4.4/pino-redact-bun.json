@@ -1,0 +1,8 @@
+{
+  "id": "pino-redact-bun",
+  "started": "2026-10-28T16:52:12.448Z",
+  "hostEligible": false,
+  "pass": true,
+  "command": "docker run oven/bun:1.4.4 bun add pino@10 && bun /check.mjs",
+  "output": "bun add v1.4.4 (38afee6c8)\n\ninstalled pino@10.4.0 with binaries:\n - pino\n\n13 packages installed [356.00ms]\npino-ok\n\nResolving dependencies\nResolved, downloaded and extracted [52]\nSaved lockfile\n"
+}

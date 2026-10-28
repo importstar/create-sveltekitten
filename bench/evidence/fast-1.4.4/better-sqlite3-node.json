@@ -1,0 +1,8 @@
+{
+  "id": "better-sqlite3-node",
+  "started": "2026-10-28T16:51:39.962Z",
+  "hostEligible": false,
+  "pass": true,
+  "command": "docker run node:24.20.0-bookworm-slim (apt, npm install better-sqlite3, node)",
+  "output": "Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]\nGet:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]\nGet:3 http://deb.debian.org/debian-security bookworm-security InRelease [34.8 kB]\nGet:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8790 kB]\nGet:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]\nGet:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [358 kB]\nFetched 9397 kB in 1s (8590 kB/s)\nReading package lists...\nsqlite-ok\n\ndebconf: delaying package configuration, since apt-utils is not installed\n"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "otel-sdk-bun",
+  "started": "2026-10-28T16:52:16.773Z",
+  "hostEligible": false,
+  "pass": true,
+  "command": "docker run oven/bun:1.4.4 bun add @opentelemetry/api@1 @opentelemetry/sdk-trace@2 && bun /check.mjs",
+  "output": "bun add v1.4.4 (38afee6c8)\n\ninstalled @opentelemetry/api@1.10.0\ninstalled @opentelemetry/sdk-trace@2.12.0\n\n5 packages installed [732.00ms]\notel-ok\n\nResolving dependencies\nResolved, downloaded and extracted [20]\nSaved lockfile\n"
+}

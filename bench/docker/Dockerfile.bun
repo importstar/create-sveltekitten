@@ -1,0 +1,30 @@
+# Production image that runs the adapter-node build with Bun.
+# Debian, not Alpine. Bun 1.2.23 panics while loading better-sqlite3 on both
+# Alpine and Debian. 1.4.4 loads it. The final process is uid 10001.
+ARG BUN_IMAGE=oven/bun:1.4.4
+FROM ${BUN_IMAGE} AS build
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+	&& rm -rf /var/lib/apt/lists/*
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
+COPY . .
+RUN bun run build
+
+FROM ${BUN_IMAGE} AS prod
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends libstdc++6 \
+	&& rm -rf /var/lib/apt/lists/* \
+	&& useradd --create-home --uid 10001 --shell /usr/sbin/nologin app
+COPY --from=build --chown=app:app /app/node_modules ./node_modules
+COPY --from=build --chown=app:app /app/build ./build
+COPY --from=build --chown=app:app /app/package.json ./package.json
+USER app
+ENV NODE_ENV=production \
+	HOST=0.0.0.0 \
+	PORT=3000 \
+	PROTOCOL_HEADER=x-forwarded-proto \
+	HOST_HEADER=x-forwarded-host \
+	DATABASE_URL=/tmp/sqlite.db
+EXPOSE 3000
+CMD ["bun", "build/index.js"]

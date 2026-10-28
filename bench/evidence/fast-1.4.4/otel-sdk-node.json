@@ -1,0 +1,8 @@
+{
+  "id": "otel-sdk-node",
+  "started": "2026-10-28T16:52:13.361Z",
+  "hostEligible": false,
+  "pass": true,
+  "command": "docker run node:24.20.0-bookworm-slim npm install --silent @opentelemetry/api@1 @opentelemetry/sdk-trace@2 && node /check.mjs",
+  "output": "otel-ok\n\n"
+}

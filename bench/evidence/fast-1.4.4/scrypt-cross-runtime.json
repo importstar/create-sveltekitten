@@ -1,0 +1,8 @@
+{
+  "id": "scrypt-cross-runtime",
+  "started": "2026-10-28T16:52:09.422Z",
+  "hostEligible": false,
+  "pass": true,
+  "command": "node and bun each run scryptSync on the same password and salt",
+  "output": "node 0 67baf4859b3c971ccea2421eacc8028804e81c1d583194270c3dca9c18d99873e6211ec0411033776caca2c8951bba2b01dfbba75596b8a2f8ae2eb04368e4a5\nbun 0 67baf4859b3c971ccea2421eacc8028804e81c1d583194270c3dca9c18d99873e6211ec0411033776caca2c8951bba2b01dfbba75596b8a2f8ae2eb04368e4a5\n\n"
+}

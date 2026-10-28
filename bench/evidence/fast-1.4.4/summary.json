@@ -1,0 +1,54 @@
+{
+  "host": {
+    "uname": "Linux Nexus 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025 x86_64 GNU/Linux",
+    "nproc": 12,
+    "memTotalKb": 16377036,
+    "loadavg": [
+      0.84,
+      0.7,
+      0.5
+    ],
+    "wsl": true,
+    "eligible": false,
+    "reason": "This host is WSL2. Issue 23 does not accept decision numbers from WSL2."
+  },
+  "versions": {
+    "NODE_IMAGE": "node:24.20.0-bookworm-slim",
+    "BUN_VERSION": "1.4.4",
+    "BUN_IMAGE": "oven/bun:1.4.4",
+    "PNPM_VERSION": "12.10.1",
+    "K6_IMAGE": "grafana/k6:1.4.2",
+    "BUN_ADAPTER_PACKAGE": "svelte-adapter-bun"
+  },
+  "fast": true,
+  "results": [
+    {
+      "id": "better-sqlite3-node",
+      "pass": true
+    },
+    {
+      "id": "better-sqlite3-bun",
+      "pass": true
+    },
+    {
+      "id": "scrypt-cross-runtime",
+      "pass": true
+    },
+    {
+      "id": "pino-redact-node",
+      "pass": true
+    },
+    {
+      "id": "pino-redact-bun",
+      "pass": true
+    },
+    {
+      "id": "otel-sdk-node",
+      "pass": true
+    },
+    {
+      "id": "otel-sdk-bun",
+      "pass": true
+    }
+  ]
+}

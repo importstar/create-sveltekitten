@@ -1,0 +1,7 @@
+# One-shot image that writes the SQLite snapshot. The app containers only read a copy of it.
+ARG NODE_IMAGE=node:24.20.0-bookworm-slim
+FROM ${NODE_IMAGE}
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+	&& rm -rf /var/lib/apt/lists/*
+WORKDIR /opt/seed
+RUN npm install better-sqlite3@13.0.3

@@ -1,0 +1,13 @@
+{
+  "cell": "R1-S1-1cpu",
+  "smoke": true,
+  "hostEligible": false,
+  "imageUser": "node",
+  "startupSec": 1.308,
+  "seededItems": 1000,
+  "requests": 51,
+  "errors": 0,
+  "workOk": 51,
+  "valid": true,
+  "note": "Smoke on WSL2. Proves the runner, the session seed, and GET /home. Not a decision number."
+}
