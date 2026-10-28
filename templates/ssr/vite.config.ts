@@ -12,7 +12,9 @@ export default defineConfig({
 			// Consult https://svelte.dev/docs/kit/integrations
 			// for more information about preprocessors
 			preprocess: vitePreprocess(),
-			adapter: adapter()
+			adapter: adapter(),
+			// OpenTelemetry spans for handle, load, actions and +server; set up in src/instrumentation.server.ts
+			tracing: { server: true }
 		}),
 		devtoolsJson()
 	],

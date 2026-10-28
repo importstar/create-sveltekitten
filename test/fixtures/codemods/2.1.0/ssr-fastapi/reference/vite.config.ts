@@ -1,0 +1,26 @@
+import adapter from '@sveltejs/adapter-node';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import devtoolsJson from 'vite-plugin-devtools-json';
+import tailwindcss from '@tailwindcss/vite';
+import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+	plugins: [
+		tailwindcss(),
+		sveltekit({
+			// Consult https://svelte.dev/docs/kit/integrations
+			// for more information about preprocessors
+			preprocess: vitePreprocess(),
+			adapter: adapter(),
+			// OpenTelemetry spans for handle, load, actions and +server; set up in src/instrumentation.server.ts
+			tracing: { server: true }
+		}),
+		devtoolsJson()
+	],
+	test: {
+		// Unit tests live next to the code; Playwright owns e2e/*.test.ts.
+		include: ['src/**/*.{test,spec}.ts'],
+		passWithNoTests: true
+	}
+});

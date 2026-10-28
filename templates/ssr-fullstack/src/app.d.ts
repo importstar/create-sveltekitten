@@ -5,7 +5,10 @@ import type { User, Session } from '#lib/server/db/schema.js';
 // for information about these interfaces
 declare global {
 	namespace App {
-		// interface Error {}
+		interface Error {
+			/** The request's trace id, set by handleError (src/lib/hooks/handle-error.ts). */
+			errorId?: string;
+		}
 		interface Locals {
 			user: User | null;
 			session: Session | null;

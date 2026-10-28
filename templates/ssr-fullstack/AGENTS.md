@@ -46,5 +46,5 @@ This project is the **full-stack** mode of the SSR template: SvelteKit owns the 
 - **Users**: login never creates users. Create accounts with `pnpm user:create <username>`.
 - **Business rules** live in `src/lib/features/<name>/service.ts`; routes call services from `#lib/server/services.js`, never the Drizzle repository (`server.ts`) directly.
 - Protected pages go inside `src/routes/(protected)/` — the auth guard runs automatically via `hooks.server.ts`.
-- Logger: `import { logger } from '#lib/logger.js'` — use instead of `console.log`.
+- Logger (server code only): `import { logger } from '#lib/server/logger.js'` — use instead of `console.log`. Each line carries the request's `trace_id`; requests and unexpected errors are already logged. Never log passwords, tokens or cookies (see Logging and Tracing in `agent-role.md`).
 - **Running `node build`**: adapter-node assumes `https` and does not read `ORIGIN`. Over plain http, or behind a proxy, set `PROTOCOL_HEADER` / `HOST_HEADER` (e.g. `x-forwarded-proto`) or `paths: { origin }` in `sveltekit({ ... })`, or form posts fail the CSRF check with 403.

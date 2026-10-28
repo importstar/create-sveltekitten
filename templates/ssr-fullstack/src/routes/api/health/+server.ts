@@ -1,7 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { sql } from 'drizzle-orm';
 import { db } from '#lib/server/db/index.js';
-import { logger } from '#lib/logger.js';
+import { logger } from '#lib/server/logger.js';
 import type { HealthStatus } from '#lib/features/health/contract.js';
 
 export const GET: RequestHandler = () => {

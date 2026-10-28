@@ -54,7 +54,8 @@ Server-side rendering via `adapter-node`. The CLI asks for one of two modes (`--
 | Auth      | Server-side sessions (`session_id` cookie) in SQLite | FastAPI JWTs in httpOnly cookies; `/login` calls FastAPI only   |
 | Rules     | `service.ts` per feature, in SvelteKit               | In FastAPI only: no business rules in SvelteKit                 |
 | API types | —                                                    | `openapi-typescript` → `src/lib/api/paths/fastapi.d.ts`         |
-| Logger    | `pino` + `pino-pretty`                               | `pino` + `pino-pretty`                                          |
+| Logger    | `pino` (server-only), JSON with trace ids            | `pino` (server-only), JSON with trace ids                       |
+| Tracing   | OpenTelemetry; exported only with `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry; exported only with `OTEL_EXPORTER_OTLP_ENDPOINT` |
 
 **Environment variables (`.env`)**
 
@@ -67,6 +68,8 @@ DATABASE_URL=sqlite.db
 PUBLIC_APP_TITLE=my-app
 BACKEND_API_URL=http://localhost:9000
 ```
+
+Optional in both SSR modes: `LOG_LEVEL` (default `debug` in dev, `info` otherwise), `OTEL_EXPORTER_OTLP_ENDPOINT` (an OTLP/HTTP collector; without it no span leaves the process) and `OTEL_SERVICE_NAME`.
 
 **Full-stack: create the first user.** Users live in the local SQLite database and `/login` never creates them. Create each account from the project folder. The script prompts for the password without echoing it:
 

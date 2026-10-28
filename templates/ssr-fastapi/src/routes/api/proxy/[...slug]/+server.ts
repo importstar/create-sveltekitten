@@ -1,5 +1,5 @@
 import { BACKEND_API_URL } from '$app/env/private';
-import { logger } from '#lib/logger.js';
+import { logger } from '#lib/server/logger.js';
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { refreshTokens } from '#lib/server/proxy/refresh.js';
@@ -17,7 +17,7 @@ const backendFetch: typeof fetch = (input, init) => fetch(input, init);
 
 const handler: RequestHandler = async ({ request, cookies, params, url }) => {
 	if (!BACKEND_API_URL) {
-		logger.error('BACKEND_API_URL environment variable is not set.');
+		// handleError logs it (with the trace id) and answers 500.
 		throw new Error('BACKEND_API_URL environment variable is not set.');
 	}
 
@@ -30,8 +30,8 @@ const handler: RequestHandler = async ({ request, cookies, params, url }) => {
 	const backendBase = BACKEND_API_URL.replace(/\/$/, '');
 	const API_ENDPOINT = `${backendBase}/${path}${url.search}`;
 
-	logger.debug(`${params.slug}`);
-	logger.info(`[API Proxy] Forwarding request to: [${request.method}] ${API_ENDPOINT}`);
+	// The path only: the query string may carry secrets. The request log line already has the route.
+	logger.debug({ method: request.method, path }, '[API Proxy] forwarding request');
 
 	// Clean up response headers that may cause client-side decoding errors
 	const createProxyResponse = (originalResponse: Response): Response => {
@@ -90,10 +90,7 @@ const handler: RequestHandler = async ({ request, cookies, params, url }) => {
 
 		return createProxyResponse(response);
 	} catch (err) {
-		logger.error(
-			{ err },
-			`[API Proxy] Error fetching from API: [${request.method}] ${API_ENDPOINT}`
-		);
+		logger.error({ err, method: request.method, path }, '[API Proxy] backend unreachable');
 		throw error(502, `Bad Gateway: Could not connect to API service. Please try again later.`);
 	}
 };

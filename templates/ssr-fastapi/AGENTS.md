@@ -46,5 +46,5 @@ This project is the **BFF** (backend-for-frontend) mode of the SSR template: Fas
 - **Auth**: FastAPI JWTs (`access_token` / `refresh_token` cookies). `/login` calls `POST /v1/auth/login` and nothing else; a rejected login creates no cookie.
 - Protected pages go inside `src/routes/(protected)/` — a UX guard in `hooks.server.ts` redirects when there is no unexpired refresh token. FastAPI verifies the token on every request.
 - **E2E**: `e2e/mock-api.js` stands in for FastAPI during `pnpm test:e2e`.
-- Logger: `import { logger } from '#lib/logger.js'` — use instead of `console.log`.
+- Logger (server code only): `import { logger } from '#lib/server/logger.js'` — use instead of `console.log`. Each line carries the request's `trace_id`; requests and unexpected errors are already logged. Never log passwords, tokens or cookies (see Logging and Tracing in `agent-role.md`).
 - **Running `node build`**: adapter-node assumes `https` and does not read `ORIGIN`. Over plain http, or behind a proxy, set `PROTOCOL_HEADER` / `HOST_HEADER` (e.g. `x-forwarded-proto`) or `paths: { origin }` in `sveltekit({ ... })`, or form posts fail the CSRF check with 403.

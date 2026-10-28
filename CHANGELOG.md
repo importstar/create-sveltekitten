@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.1.0
+
+**Structured server logs tied to OpenTelemetry tracing** (issue #16), in both SSR modes. SPA projects have no server, so they get no logger; their `agent-role.md` now says so.
+
+- **The logger is server-only**: `src/lib/logger.ts` moved to `src/lib/server/logger.ts`; import it from `#lib/server/logger.js`. Importing it from browser code now fails the build (SvelteKit's `server_only_import`) instead of bundling pino into the client. `logger.inspect`, `logger.dir` and `logger.table` are gone: they printed whole objects with `console.log`, past redaction.
+- **Every line carries `trace_id` / `span_id`** of the active span. `tracing: { server: true }` in `vite.config.ts` turns on SvelteKit's spans, and the new `src/instrumentation.server.ts` registers the OpenTelemetry SDK. Spans always get real ids; they are exported over OTLP/HTTP only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (to `<endpoint>/v1/traces`), so without it nothing is sent and nothing fails. New optional variables in `src/env.ts`: `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME` (default `sveltekitten`) and `LOG_LEVEL` (default `debug` in dev, `info` otherwise).
+- **One request line**: `handleRequestLog` (`src/lib/hooks/request-log.ts`, first in `sequence(...)`) logs method, route id (never the URL), status and `duration_ms`, with the ids of the `sveltekit.handle.root` span.
+- **`handleError` logs unexpected errors once** (`error` level, with stack and trace id) and gives every error response an `errorId`: the trace id. `App.Error` has `errorId?: string`, and the error page shows it. It is optional because a required property would make every `error(status, message)` call a type error.
+- **Redaction** covers `password`, `token`, `access_token`, `refresh_token`, `cookie`, `set-cookie` and `authorization`, at the top level and one level down.
+- **What each mode logged before, and now**: the full-stack login printed the error object with `console.log` (dev only) through `logger.inspect`; it now logs `error` with the error, and `debug` lines with the outcome only. The FastAPI proxy logged every forwarded URL, query string included, at `info`; it now logs the method and path at `debug`, and the request line covers routine traffic. A missing `BACKEND_API_URL` is logged by `handleError` instead of twice. Neither login logs a password, token or cookie at any level; `src/routes/login/page.server.test.ts` checks it in each mode.
+- New dependencies (server runtime, in `dependencies`): `@opentelemetry/api` `~1.9.1`, `@opentelemetry/sdk-trace`, `@opentelemetry/context-async-hooks`, `@opentelemetry/core`, `@opentelemetry/resources` (`^2.12.0`) and `@opentelemetry/exporter-trace-otlp-http` (`^0.223.0`). `@opentelemetry/api` stays on 1.9 because `@opentelemetry/sdk-trace` 2.x does not accept 1.10.
+
+Update existing projects:
+
+```bash
+pnpx create-sveltekitten patch
+pnpm install                 # pnpm-lock.yaml cannot be patched
+pnpm check && pnpm test:unit
+```
+
+The patch adds the new files (instrumentation, logger, hooks and their tests), deletes `src/lib/logger.ts` if you did not edit it, moves the logger import in the template files that use it, and adds the dependencies to `package.json` (tab-indented JSON only; otherwise it warns with the list). An edited `hooks.server.ts`, `vite.config.ts` or `src/env.ts` is left alone with a warning that says what to add. After writing, it lists your own files that still import `#lib/logger.js` or call `logger.inspect` / `dir` / `table`; switch them to `#lib/server/logger.js` and structured fields.
+
 ## 2.0.0
 
 **Breaking: every template now uses SvelteKit 3** (issue #15). Node 22.17 or later is required (SvelteKit 3's own minimum; SPA projects said `>=20`, SSR `>=22`).

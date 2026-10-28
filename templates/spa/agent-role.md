@@ -62,7 +62,8 @@ The contract is more than the type: e.g. `toggleItem` must resolve with the full
 - **XSS can steal the access token** — any script injected into the page can read `localStorage`, so never render untrusted HTML with `{@html}`.
 - **Protected pages must live inside `(protected)/`** — the layout guard calls `requireAuth()` automatically
 - **Svelte 5 runes only** — no legacy Svelte 4 syntax. See the table below.
-- **Imports from `src/lib` use `#lib` with the file extension** — e.g. `import { logger } from '#lib/logger.js'`, `#lib/components/ui/button/index.js`. SvelteKit 3 resolves `#lib` through the `imports` field in `package.json`. Configuration (adapter, preprocess) is passed to `sveltekit({ ... })` in `vite.config.ts`; there is no `svelte.config.js`. Environment variables are declared in `src/env.ts` and imported from `$app/env/public` / `$app/env/private`.
+- **Imports from `src/lib` use `#lib` with the file extension** — e.g. `import { cn } from '#lib/utils/shadcn.js'`, `#lib/components/ui/button/index.js`. SvelteKit 3 resolves `#lib` through the `imports` field in `package.json`. Configuration (adapter, preprocess) is passed to `sveltekit({ ... })` in `vite.config.ts`; there is no `svelte.config.js`. Environment variables are declared in `src/env.ts` and imported from `$app/env/public` / `$app/env/private`.
+- **No logger** — a SPA has no server, so it has no pino or OpenTelemetry setup (the SSR modes do); show failures to the user (toast, error page) and log on the backend.
 - **Run `svelte-autofixer` before finalizing any `.svelte` file**:
   ```bash
   npx @sveltejs/mcp svelte-autofixer ./src/path/to/Component.svelte

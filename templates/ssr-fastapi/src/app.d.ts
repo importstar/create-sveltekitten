@@ -6,7 +6,10 @@ import type { Client } from 'openapi-fetch';
 // for information about these interfaces
 declare global {
 	namespace App {
-		// interface Error {}
+		interface Error {
+			/** The request's trace id, set by handleError (src/lib/hooks/handle-error.ts). */
+			errorId?: string;
+		}
 		interface Locals {
 			fastapiClient: Client<paths>;
 		}
