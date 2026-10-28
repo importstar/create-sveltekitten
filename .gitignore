@@ -4,3 +4,5 @@ node_modules/
 .env.*
 !.env.example
 **/.claude/settings.local.json
+# Codemod fixtures include a scaffolded project's .env (no secrets)
+!test/fixtures/codemods/**/.env

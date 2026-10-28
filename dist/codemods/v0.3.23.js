@@ -1,3 +1,4 @@
+import { createFile, replaceFile } from './helpers.js';
 const OLD_PROXY = `import { env } from '$env/dynamic/private';
 import { logger } from '$lib/logger';
 import { error } from '@sveltejs/kit';
@@ -472,13 +473,6 @@ describe('refreshTokens', () => {
 	});
 });
 `;
-// Projects at 0.3.22 carry these files verbatim; an edited file is left alone.
-function replaceFile(from, to) {
-    return (content) => (content.replace(/\r\n/g, '\n') === from ? to : content);
-}
-function createFile(to) {
-    return (content) => (content === '' ? to : content);
-}
 const codemod = {
     from: '0.3.22',
     to: '0.3.23',

@@ -4,7 +4,7 @@ import { cp, mkdir, readFile, writeFile, readdir, rename, unlink } from 'node:fs
 import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { styleText } from 'node:util';
+import { parseArgs, styleText } from 'node:util';
 import { patch } from './patch.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = join(__dirname, '../templates');
@@ -77,65 +77,131 @@ async function addFullstackPackageEntries(targetDir) {
     pkg.scripts['user:create'] = 'tsx scripts/user-create.ts';
     await writeFile(pkgPath, JSON.stringify(pkg, null, '\t') + '\n');
 }
-async function main() {
+const TEMPLATES = ['ssr', 'spa'];
+const SSR_MODES = ['fullstack', 'fastapi'];
+const DEFAULT_BACKEND_URL = 'http://localhost:9000';
+function fail(message) {
+    p.log.error(message, { output: process.stderr });
+    process.exit(1);
+}
+function oneOf(flag, value, allowed) {
+    if (value === undefined)
+        return undefined;
+    if (!allowed.includes(value)) {
+        fail(`Invalid ${flag} "${value}". Allowed: ${allowed.join(', ')}.`);
+    }
+    return value;
+}
+/** Flags for a non-interactive scaffold; anything missing is prompted for, unless --yes. */
+function parseFlags(args) {
+    let values;
+    try {
+        ({ values } = parseArgs({
+            args,
+            options: {
+                name: { type: 'string' },
+                template: { type: 'string' },
+                mode: { type: 'string' },
+                'backend-url': { type: 'string' },
+                yes: { type: 'boolean' }
+            },
+            strict: true,
+            allowPositionals: false
+        }));
+    }
+    catch (err) {
+        fail(`${err.message}\nUsage: create-sveltekitten [--name <name>] [--template ssr|spa] [--mode fullstack|fastapi] [--backend-url <url>] [--yes]`);
+    }
+    const name = values.name?.trim();
+    if (values.name !== undefined && !name)
+        fail('--name must not be empty.');
+    const template = oneOf('--template', values.template, TEMPLATES);
+    const mode = oneOf('--mode', values.mode, SSR_MODES);
+    if (mode && template === 'spa')
+        fail('--mode only applies to --template ssr.');
+    const yes = values.yes ?? false;
+    if (yes) {
+        if (!name)
+            fail('--yes needs --name.');
+        if (!template)
+            fail(`--yes needs --template (${TEMPLATES.join(' or ')}).`);
+        if (template === 'ssr' && !mode)
+            fail(`--yes with --template ssr needs --mode (${SSR_MODES.join(' or ')}).`);
+    }
+    return { name, template, mode, backendUrl: values['backend-url'], yes };
+}
+async function main(flags) {
     const version = await getVersion();
     p.intro(`create-sveltekitten v${version}`);
-    const projectName = await p.text({
-        message: 'Project name',
-        placeholder: 'my-app',
-        validate: (v) => (v?.trim() ? undefined : 'Required')
-    });
-    if (p.isCancel(projectName)) {
-        p.cancel('Cancelled.');
-        process.exit(0);
-    }
-    const template = await p.select({
-        message: 'Template',
-        options: [
-            {
-                value: 'ssr',
-                label: 'SSR',
-                hint: `v${version} · adapter-node · Drizzle SQLite / FastAPI BFF · server auth`
-            },
-            {
-                value: 'spa',
-                label: 'SPA',
-                hint: `v${version} · adapter-static · client-side auth · TanStack Query`
-            }
-        ]
-    });
-    if (p.isCancel(template)) {
-        p.cancel('Cancelled.');
-        process.exit(0);
-    }
-    let ssrMode;
-    let backendUrl = 'http://localhost:9000';
-    if (template === 'ssr') {
-        const mode = await p.select({
-            message: 'Backend architecture for SSR',
-            options: [
-                {
-                    value: 'fullstack',
-                    label: 'SvelteKit Full-Stack (Integrated)',
-                    hint: 'SQLite · Drizzle ORM · Server Actions · Local Database'
-                },
-                {
-                    value: 'fastapi',
-                    label: 'FastAPI Backend (BFF Proxy)',
-                    hint: 'OpenAPI client · /api/proxy/** · External Python API'
-                }
-            ]
+    let projectName = flags.name;
+    if (projectName === undefined) {
+        const answer = await p.text({
+            message: 'Project name',
+            placeholder: 'my-app',
+            validate: (v) => (v?.trim() ? undefined : 'Required')
         });
-        if (p.isCancel(mode)) {
+        if (p.isCancel(answer)) {
             p.cancel('Cancelled.');
             process.exit(0);
         }
-        ssrMode = mode;
-        if (ssrMode === 'fastapi') {
+        projectName = answer;
+    }
+    let template = flags.template;
+    if (template === undefined) {
+        const answer = await p.select({
+            message: 'Template',
+            options: [
+                {
+                    value: 'ssr',
+                    label: 'SSR',
+                    hint: `v${version} · adapter-node · Drizzle SQLite / FastAPI BFF · server auth`
+                },
+                {
+                    value: 'spa',
+                    label: 'SPA',
+                    hint: `v${version} · adapter-static · client-side auth · TanStack Query`
+                }
+            ]
+        });
+        if (p.isCancel(answer)) {
+            p.cancel('Cancelled.');
+            process.exit(0);
+        }
+        template = answer;
+    }
+    if (flags.mode && template === 'spa')
+        fail('--mode only applies to --template ssr.');
+    let ssrMode;
+    let backendUrl = flags.backendUrl ?? DEFAULT_BACKEND_URL;
+    if (template === 'ssr') {
+        ssrMode = flags.mode;
+        if (ssrMode === undefined) {
+            const mode = await p.select({
+                message: 'Backend architecture for SSR',
+                options: [
+                    {
+                        value: 'fullstack',
+                        label: 'SvelteKit Full-Stack (Integrated)',
+                        hint: 'SQLite · Drizzle ORM · Server Actions · Local Database'
+                    },
+                    {
+                        value: 'fastapi',
+                        label: 'FastAPI Backend (BFF Proxy)',
+                        hint: 'OpenAPI client · /api/proxy/** · External Python API'
+                    }
+                ]
+            });
+            if (p.isCancel(mode)) {
+                p.cancel('Cancelled.');
+                process.exit(0);
+            }
+            ssrMode = mode;
+        }
+        if (ssrMode === 'fastapi' && flags.backendUrl === undefined && !flags.yes) {
             const url = await p.text({
                 message: 'BACKEND_API_URL (FastAPI base URL)',
-                placeholder: 'http://localhost:9000',
-                initialValue: 'http://localhost:9000'
+                placeholder: DEFAULT_BACKEND_URL,
+                initialValue: DEFAULT_BACKEND_URL
             });
             if (p.isCancel(url)) {
                 p.cancel('Cancelled.');
@@ -144,11 +210,11 @@ async function main() {
             backendUrl = url;
         }
     }
-    else {
+    else if (flags.backendUrl === undefined && !flags.yes) {
         const url = await p.text({
             message: 'PUBLIC_API_URL (backend base URL)',
-            placeholder: 'http://localhost:9000',
-            initialValue: 'http://localhost:9000'
+            placeholder: DEFAULT_BACKEND_URL,
+            initialValue: DEFAULT_BACKEND_URL
         });
         if (p.isCancel(url)) {
             p.cancel('Cancelled.');
@@ -158,6 +224,8 @@ async function main() {
     }
     const targetDir = join(process.cwd(), projectName);
     if (existsSync(targetDir)) {
+        if (flags.yes)
+            fail(`Directory "${projectName}" already exists. --yes never overwrites; choose another --name.`);
         const overwrite = await p.confirm({
             message: `Directory "${projectName}" already exists. Overwrite?`,
             initialValue: false
@@ -237,7 +305,7 @@ if (command === 'patch') {
     });
 }
 else {
-    main().catch((err) => {
+    main(parseFlags(process.argv.slice(2))).catch((err) => {
         console.error(err);
         process.exit(1);
     });
