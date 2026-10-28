@@ -29,6 +29,12 @@ import v0_3_21 from './v0.3.21.js';
 import v0_3_22 from './v0.3.22.js';
 import v0_3_23 from './v0.3.23.js';
 
+/**
+ * What a transform returns: the new content, or the content plus warnings for the person
+ * running `patch` (e.g. the file was edited, so the change must be applied by hand).
+ */
+export type TransformResult = string | { content: string; warnings: string[] };
+
 export interface FileTransform {
 	/** Relative path from project root, e.g. "src/lib/auth.ts" */
 	file: string;
@@ -38,7 +44,8 @@ export interface FileTransform {
 	template?: 'ssr' | 'spa';
 	/** Restrict this transform to a specific SSR mode. Skipped when the project's ssrMode doesn't match (or is unset). */
 	ssrMode?: 'fullstack' | 'fastapi';
-	transform: (content: string) => string;
+	/** Must be pure. Return warnings instead of silently leaving a file unchanged when the expected text is missing. */
+	transform: (content: string) => TransformResult;
 }
 
 export interface Codemod {

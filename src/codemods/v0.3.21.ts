@@ -1,4 +1,5 @@
 import type { Codemod } from './index.js';
+import { createFile, PATTERN_NOT_FOUND_WARNING, replaceFile, warn } from './helpers.js';
 
 const OLD_FULLSTACK_LOGIN = `import { redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
@@ -853,15 +854,6 @@ export function createDb(path: string): Db {
 }
 `;
 
-// Projects at 0.3.20 carry these files verbatim; an edited file is left alone.
-function replaceFile(from: string, to: string) {
-	return (content: string) => (content.replace(/\r\n/g, '\n') === from ? to : content);
-}
-
-function createFile(to: string) {
-	return (content: string) => (content === '' ? to : content);
-}
-
 const USERS_NOTE = `- **Users**: login never creates users, in either mode. In fullstack mode, create accounts with \`pnpm user:create <username>\`.
 `;
 
@@ -874,16 +866,17 @@ function editPackageJson(edit: (pkg: any) => void) {
 			edit(pkg);
 			return JSON.stringify(pkg) === before ? content : JSON.stringify(pkg, null, '\t') + '\n';
 		} catch {
-			return content;
+			return warn(content, 'is not valid JSON, so it was left as is; apply this change by hand (see CHANGELOG)');
 		}
 	};
 }
 
 function insertUsersNoteBefore(anchor: string) {
-	return (content: string) =>
-		content.includes(USERS_NOTE) || !content.includes(anchor)
-			? content
-			: content.replace(anchor, USERS_NOTE + anchor);
+	return (content: string) => {
+		if (content.includes(USERS_NOTE)) return content;
+		if (!content.includes(anchor)) return warn(content, PATTERN_NOT_FOUND_WARNING);
+		return content.replace(anchor, USERS_NOTE + anchor);
+	};
 }
 
 const codemod: Codemod = {

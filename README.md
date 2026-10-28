@@ -22,6 +22,24 @@ pnpm install
 pnpm dev
 ```
 
+### Non-interactive
+
+Pass any of these flags to skip its prompt; the CLI asks only for what is missing.
+
+| Flag | Values |
+| --- | --- |
+| `--name <name>` | project folder and `package.json` name |
+| `--template <t>` | `ssr` or `spa` |
+| `--mode <m>` | `fullstack` or `fastapi` (SSR only) |
+| `--backend-url <url>` | backend base URL, default `http://localhost:9000` |
+| `--yes` | never prompt: `--name`, `--template` and (for SSR) `--mode` are required, and an existing folder is an error instead of an overwrite |
+
+```bash
+pnpx github:importstar/create-sveltekitten --name my-app --template ssr --mode fastapi --backend-url http://localhost:9000 --yes
+```
+
+Invalid or missing values exit with code 1 and say what is allowed.
+
 ## Templates
 
 ### SSR

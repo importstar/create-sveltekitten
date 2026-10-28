@@ -1,3 +1,4 @@
+import { normalizeNewlines, PATTERN_NOT_FOUND_WARNING, replaceFile, warn } from './helpers.js';
 const OLD_AUTH_GUARD = `import { clearCookieTokens, isProtectedRoute, isTokenExpired } from '$lib/utils/auth';
 import { validateSessionToken, setSessionCookie, deleteSessionCookie } from '$lib/server/auth/session';
 import type { Handle } from '@sveltejs/kit';
@@ -122,19 +123,25 @@ const NEW_LOGIN_LOAD = `export const load = (async ({ locals }) => {
 		throw redirect(303, '/home');
 	}
 `;
-const normalize = (content) => content.replaceAll('\r\n', '\n');
+const replaceAuthGuard = replaceFile(OLD_AUTH_GUARD, NEW_AUTH_GUARD);
+const UNSAFE_CHECK = 'event.locals.user || (refreshToken && !isTokenExpired(refreshToken))';
+// An edited guard still gets the one-line fix when the unsafe check is intact.
 function fixAuthGuard(content) {
-    if (normalize(content) === OLD_AUTH_GUARD)
-        return NEW_AUTH_GUARD;
-    const unsafeCheck = 'event.locals.user || (refreshToken && !isTokenExpired(refreshToken))';
-    if (content.includes(unsafeCheck))
-        return content.replace(unsafeCheck, 'event.locals.user');
-    return content;
+    const replaced = replaceAuthGuard(content);
+    if (typeof replaced === 'string')
+        return replaced;
+    if (content.includes(UNSAFE_CHECK))
+        return content.replace(UNSAFE_CHECK, 'event.locals.user');
+    return replaced;
 }
 function fixLogin(content) {
-    if (!content.includes(OLD_LOGIN_LOAD) || !content.includes(OLD_LOGIN_IMPORT))
+    if (content.includes(OLD_LOGIN_LOAD) && content.includes(OLD_LOGIN_IMPORT)) {
+        return content.replace(OLD_LOGIN_LOAD, NEW_LOGIN_LOAD).replace(OLD_LOGIN_IMPORT, NEW_LOGIN_IMPORT);
+    }
+    const normalized = normalizeNewlines(content);
+    if (normalized.includes(NEW_LOGIN_LOAD) && normalized.includes(NEW_LOGIN_IMPORT))
         return content;
-    return content.replace(OLD_LOGIN_LOAD, NEW_LOGIN_LOAD).replace(OLD_LOGIN_IMPORT, NEW_LOGIN_IMPORT);
+    return warn(content, PATTERN_NOT_FOUND_WARNING);
 }
 const codemod = {
     from: '0.3.19',
@@ -150,7 +157,7 @@ const codemod = {
             file: 'src/routes/(protected)/+layout.server.ts',
             template: 'ssr',
             ssrMode: 'fullstack',
-            transform: (content) => normalize(content) === OLD_PROTECTED_LAYOUT ? NEW_PROTECTED_LAYOUT : content,
+            transform: replaceFile(OLD_PROTECTED_LAYOUT, NEW_PROTECTED_LAYOUT),
         },
         {
             file: 'src/routes/login/+page.server.ts',

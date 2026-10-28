@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { getApplicableCodemods } from './codemods/index.js';
+import { applyCodemods } from './codemods/apply.js';
 export async function patch(latestVersion) {
     const configPath = join(process.cwd(), '.sveltekitten.json');
     if (!existsSync(configPath)) {
@@ -23,58 +24,25 @@ export async function patch(latestVersion) {
         p.outro('Done.');
         return;
     }
-    const originalContent = new Map(); // undefined = file didn't exist yet
-    const currentContent = new Map();
-    const isNewFile = new Map();
-    for (const codemod of applicable) {
+    // Preview changes. applyCodemods carries each file's content across the chained
+    // codemods of this run and never writes; this function prints and writes.
+    const run = await applyCodemods(applicable, config, async (file) => {
+        const filePath = join(process.cwd(), file);
+        return existsSync(filePath) ? readFile(filePath, 'utf-8') : undefined;
+    });
+    for (const { codemod, transforms } of run.log) {
         p.log.step(`Codemod ${codemod.from} → ${codemod.to}`);
-        for (const t of codemod.transforms) {
-            if (t.template && t.template !== template) {
-                continue;
-            }
-            if (t.ssrMode && t.ssrMode !== config.ssrMode) {
-                continue;
-            }
-            const filePath = join(process.cwd(), t.file);
-            let oldContent;
-            let firstEncounter = false;
-            if (currentContent.has(t.file)) {
-                oldContent = currentContent.get(t.file);
-            }
-            else if (existsSync(filePath)) {
-                oldContent = await readFile(filePath, 'utf-8');
-                originalContent.set(t.file, oldContent);
-                firstEncounter = true;
-            }
-            else if (t.create) {
-                oldContent = '';
-                originalContent.set(t.file, undefined);
-                isNewFile.set(t.file, true);
-                firstEncounter = true;
-            }
-            else {
-                p.log.warn(`  skip ${t.file} (not found)`);
-                continue;
-            }
-            const newContent = t.transform(oldContent);
-            currentContent.set(t.file, newContent);
-            if (isNewFile.get(t.file) && firstEncounter) {
-                p.log.info(`  create ${t.file}`);
-            }
-            else if (newContent === oldContent) {
-                p.log.info(`  unchanged ${t.file}`);
-            }
-            else {
-                p.log.info(`  modified ${t.file}`);
+        for (const { file, status, warnings } of transforms) {
+            if (status === 'skipped')
+                p.log.warn(`  skip ${file} (not found)`);
+            else
+                p.log.info(`  ${status} ${file}`);
+            for (const warning of warnings) {
+                p.log.warn(`  warning ${file} (codemod ${codemod.from} → ${codemod.to}): ${warning}`);
             }
         }
     }
-    const pending = [];
-    for (const [file, newContent] of currentContent) {
-        if (newContent !== (originalContent.get(file) ?? '')) {
-            pending.push({ file, newContent, isNew: isNewFile.get(file) ?? false });
-        }
-    }
+    const pending = run.changes;
     if (pending.length === 0) {
         p.log.info('No file changes needed.');
     }
@@ -89,11 +57,11 @@ export async function patch(latestVersion) {
         }
         const spinner = p.spinner();
         spinner.start('Applying changes...');
-        for (const { file, newContent, isNew } of pending) {
+        for (const { file, content, isNew } of pending) {
             const dest = join(process.cwd(), file);
             if (isNew)
                 await mkdir(dirname(dest), { recursive: true });
-            await writeFile(dest, newContent);
+            await writeFile(dest, content);
         }
         spinner.stop('Changes applied.');
     }

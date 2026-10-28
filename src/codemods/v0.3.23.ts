@@ -1,4 +1,5 @@
 import type { Codemod } from './index.js';
+import { createFile, replaceFile } from './helpers.js';
 
 const OLD_PROXY = `import { env } from '$env/dynamic/private';
 import { logger } from '$lib/logger';
@@ -479,15 +480,6 @@ describe('refreshTokens', () => {
 	});
 });
 `;
-
-// Projects at 0.3.22 carry these files verbatim; an edited file is left alone.
-function replaceFile(from: string, to: string) {
-	return (content: string) => (content.replace(/\r\n/g, '\n') === from ? to : content);
-}
-
-function createFile(to: string) {
-	return (content: string) => (content === '' ? to : content);
-}
 
 const codemod: Codemod = {
 	from: '0.3.22',
