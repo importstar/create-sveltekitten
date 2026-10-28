@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.24
+
+**Bug fix** for token refresh in SSR FastAPI (BFF) projects. When an access token expired, the `/api/proxy` route called `POST /v1/auth/refresh`. The FastAPI spec that ships with the template (`src/libs/api-specs/fastapi.json`) has no such endpoint, so a backend that matches it answered 404 or 405. The proxy then cleared the cookies and logged the user out about every 10 minutes.
+
+- `src/lib/server/proxy/refresh.ts` now calls `GET /v1/auth/refresh_token` as the spec defines it. It sends the refresh token as the `refresh_token` cookie and as `Authorization: Bearer`. The response has only a new access token, so the existing `refresh_token` cookie is kept. Requests that share one refresh still work as in 0.3.23. Ordinary proxied requests still never carry the browser's cookies.
+- `e2e/mock-api.js` now mocks `GET /v1/auth/refresh_token` and `GET /v1/users/me` as the spec does. A new `e2e/proxy-refresh.test.ts` covers refresh through the proxy. It is skipped in full-stack projects, which have no mock backend.
+
+This follows the committed spec. If your backend still serves `POST /v1/auth/refresh`, keep your current `refresh.ts`.
+
+Update existing projects with:
+
+```bash
+pnpx create-sveltekitten patch
+```
+
+The patch replaces `refresh.ts`, `refresh.test.ts` and `e2e/mock-api.js` only when they are unchanged from 0.3.23. If you edited them, port the changes by hand from the new template.
+
 ## 0.3.23
 
 **Security and bug fix** in the SSR `/api/proxy` route. It matters most in FastAPI (BFF) projects, where all API traffic goes through the proxy.

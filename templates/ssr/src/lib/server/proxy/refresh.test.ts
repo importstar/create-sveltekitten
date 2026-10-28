@@ -14,20 +14,54 @@ function cookieJar(initial: Record<string, string>) {
 	return { jar, cookies };
 }
 
+// Answers like GET /v1/auth/refresh_token in fastapi.json: the refresh token comes from the
+// refresh_token cookie; anything else is a 404.
 function backend(respond: (refreshToken: string) => Response | Promise<Response>) {
-	return vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+	return vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
 		await new Promise((resolve) => setTimeout(resolve, 20));
-		const auth = new Headers(init?.headers).get('authorization') ?? '';
-		return respond(auth.replace('Bearer ', ''));
+		if (String(url) !== `${BACKEND}/v1/auth/refresh_token` || (init?.method ?? 'GET') !== 'GET') {
+			return new Response(null, { status: 404 });
+		}
+		const cookie = new Headers(init?.headers).get('cookie') ?? '';
+		return respond(/(?:^|;\s*)refresh_token=([^;]*)/.exec(cookie)?.[1] ?? '');
 	});
 }
 
+const accessOnly = (n: number) => () =>
+	Response.json({ access_token: `access-${n}`, token_type: 'bearer' });
 const rotated = (n: number) => () =>
-	Response.json({ access_token: `access-${n}`, refresh_token: `refresh-${n}` });
+	Response.json({
+		access_token: `access-${n}`,
+		refresh_token: `refresh-${n}`,
+		token_type: 'bearer'
+	});
 
 describe('refreshTokens', () => {
+	it('sends the refresh token as cookie and bearer to GET /v1/auth/refresh_token', async () => {
+		const fetchFn = backend(accessOnly(0));
+		await refreshTokens(cookieJar({ refresh_token: 'spec-0' }).cookies, BACKEND, fetchFn);
+
+		const [url, init] = fetchFn.mock.calls[0];
+		const headers = new Headers(init?.headers);
+		expect(url).toBe(`${BACKEND}/v1/auth/refresh_token`);
+		expect(init?.method).toBe('GET');
+		expect(headers.get('cookie')).toBe('refresh_token=spec-0');
+		expect(headers.get('authorization')).toBe('Bearer spec-0');
+	});
+
+	it('keeps the refresh token cookie when the backend returns only an access token', async () => {
+		const fetchFn = backend((token) =>
+			token === 'kept-6' ? accessOnly(6)() : new Response(null, { status: 401 })
+		);
+		const { jar, cookies } = cookieJar({ access_token: 'old', refresh_token: 'kept-6' });
+
+		expect(await refreshTokens(cookies, BACKEND, fetchFn)).toBe('access-6');
+		expect(jar.get('access_token')).toBe('access-6');
+		expect(jar.get('refresh_token')).toBe('kept-6');
+	});
+
 	it('sends one refresh for concurrent callers with the same refresh token', async () => {
-		const fetchFn = backend(rotated(1));
+		const fetchFn = backend(accessOnly(1));
 		const callers = [1, 2, 3].map(() => cookieJar({ refresh_token: 'shared-1' }));
 
 		const results = await Promise.all(
@@ -39,7 +73,7 @@ describe('refreshTokens', () => {
 		for (const { jar } of callers) expect(jar.get('access_token')).toBe('access-1');
 	});
 
-	it('gives a caller that still holds the just-rotated token the new pair', async () => {
+	it('gives a caller that still holds a just-rotated token the new tokens', async () => {
 		const fetchFn = backend(rotated(2));
 		await refreshTokens(cookieJar({ refresh_token: 'rotating-2' }).cookies, BACKEND, fetchFn);
 
@@ -59,7 +93,7 @@ describe('refreshTokens', () => {
 	});
 
 	it('clears the cookies without calling the backend when there is no refresh token', async () => {
-		const fetchFn = backend(rotated(4));
+		const fetchFn = backend(accessOnly(4));
 		const { jar, cookies } = cookieJar({ access_token: 'old' });
 
 		expect(await refreshTokens(cookies, BACKEND, fetchFn)).toBeUndefined();
@@ -72,7 +106,7 @@ describe('refreshTokens', () => {
 		const fetchFn = backend(() => {
 			calls++;
 			if (calls === 1) throw new TypeError('fetch failed');
-			return rotated(5)();
+			return accessOnly(5)();
 		});
 
 		await expect(
