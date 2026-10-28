@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.4
+
+Docs fix for SPA projects. `AGENTS.md` and `agent-role.md` said `authStore` keeps the access token in memory. It saves its whole state, access token included, to `localStorage` (`auth_state`) so a reload keeps you signed in. Both files now say so and add one line on the risk: any injected script can read the token, so never render untrusted HTML with `{@html}`. Nothing about how auth works changed.
+
+Update existing projects with:
+
+```bash
+pnpx create-sveltekitten patch
+```
+
+The patch rewrites the auth line in each file only if it is unchanged from 1.1.3.
+
 ## 1.1.3
 
 `@tanstack/svelte-query-devtools` moved from `dependencies` to `devDependencies` in every template and mode, and `openapi-typescript` with it in SPA and SSR FastAPI (BFF) projects (full-stack projects do not use it). `openapi-typescript` only generates types, and the devtools component is bundled into the build, so `pnpm install --prod` no longer installs either. The SSR server still starts from a production-only install.

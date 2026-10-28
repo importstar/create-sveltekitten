@@ -93,12 +93,12 @@ The items example calls `/v1/items` on FastAPI; the committed spec includes thos
 
 Static output via `adapter-static`. Auth and API calls handled entirely client-side.
 
-| What          | Detail                                            |
-| ------------- | ------------------------------------------------- |
-| Adapter       | `@sveltejs/adapter-static`                        |
-| Auth          | Client-side, JWT stored in memory                 |
-| Data fetching | TanStack Query v6                                 |
-| API types     | `openapi-typescript` → `src/lib/api/openapi.d.ts` |
+| What          | Detail                                                            |
+| ------------- | ----------------------------------------------------------------- |
+| Adapter       | `@sveltejs/adapter-static`                                        |
+| Auth          | Client-side, access token in `localStorage` (readable by any XSS) |
+| Data fetching | TanStack Query v6                                                 |
+| API types     | `openapi-typescript` → `src/lib/api/openapi.d.ts`                 |
 
 **Environment variables (`.env`)**
 

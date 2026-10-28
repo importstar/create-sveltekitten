@@ -35,6 +35,7 @@ import v1_1_0 from './v1.1.0.js';
 import v1_1_1 from './v1.1.1.js';
 import v1_1_2 from './v1.1.2.js';
 import v1_1_3 from './v1.1.3.js';
+import v1_1_4 from './v1.1.4.js';
 
 /**
  * What a transform returns: the new content, or the content plus warnings for the person
@@ -99,7 +100,8 @@ export const codemods: Codemod[] = [
 	v1_1_0,
 	v1_1_1,
 	v1_1_2,
-	v1_1_3
+	v1_1_3,
+	v1_1_4
 ];
 
 function parseVersion(v: string): [number, number, number] {

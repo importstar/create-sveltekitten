@@ -2,11 +2,11 @@ declare const _default: {
     from: string;
     to: string;
     transforms: ({
-        ssrMode?: undefined;
         file: string;
         create: true;
         template: "spa";
         transform: (content: string) => import("./index.js").TransformResult;
+        ssrMode?: undefined;
     } | {
         file: string;
         create: true;
@@ -20,11 +20,11 @@ declare const _default: {
         ssrMode: "fastapi";
         transform: (content: string) => import("./index.js").TransformResult;
     } | {
-        ssrMode?: undefined;
         create?: undefined;
         file: string;
         template: "spa";
         transform: (content: string) => import("./index.js").TransformResult;
+        ssrMode?: undefined;
     } | {
         create?: undefined;
         file: string;
@@ -38,9 +38,9 @@ declare const _default: {
         ssrMode: "fastapi";
         transform: (content: string) => import("./index.js").TransformResult;
     } | {
-        ssrMode?: undefined;
+        create?: undefined;
         template?: undefined;
-        create?: undefined;
+        ssrMode?: undefined;
         file: string;
         transform: (content: string) => import("./index.js").TransformResult;
     })[];
