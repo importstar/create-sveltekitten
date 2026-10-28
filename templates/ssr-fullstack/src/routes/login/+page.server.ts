@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { loginSchema } from '#lib/features/login/schema.js';
-import { logger } from '#lib/logger.js';
+import { logger } from '#lib/server/logger.js';
 import { db } from '#lib/server/db/index.js';
 import { authenticate } from '#lib/server/auth/users.js';
 import { createSession, generateSessionToken, setSessionCookie } from '#lib/server/auth/session.js';
@@ -29,6 +29,7 @@ export const actions: Actions = {
 		try {
 			const user = await authenticate(db, form.data.username, form.data.password);
 			if (!user) {
+				logger.debug({ outcome: 'invalid_credentials' }, 'login rejected');
 				return message(
 					form,
 					{
@@ -42,8 +43,10 @@ export const actions: Actions = {
 			const token = generateSessionToken();
 			const session = await createSession(token, user.id);
 			setSessionCookie(cookies, token, session.expiresAt);
+			logger.debug({ outcome: 'success', user_id: user.id }, 'login succeeded');
 		} catch (err) {
-			logger.inspect('Local login error', err);
+			// Caught to show a form message, so handleError never sees it: log it here.
+			logger.error({ err }, 'login failed: authentication error');
 			return message(
 				form,
 				{

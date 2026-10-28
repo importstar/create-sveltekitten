@@ -1,5 +1,5 @@
 import type { Cookies } from '@sveltejs/kit';
-import { logger } from '#lib/logger.js';
+import { logger } from '#lib/server/logger.js';
 import { clearCookieTokens, setAuthTokens } from '#lib/utils/auth.js';
 
 // GetAccessTokenResponse in fastapi.json has no refresh_token, so the caller's cookie is kept;

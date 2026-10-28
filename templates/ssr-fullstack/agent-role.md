@@ -11,7 +11,7 @@ You are a subagent working on a SvelteKit web application built from the **svelt
 - **bits-ui** as the headless primitive layer; shadcn-style components in `src/lib/components/ui/`
 - **TanStack Query** (`@tanstack/svelte-query`) for client-side data fetching & mutations — `QueryClientProvider` is wired in the root layout
 - **Superforms + Zod** for server-validated forms
-- **pino** for logging (`src/lib/logger.ts`)
+- **pino** for logging (`src/lib/server/logger.ts`, server-only) and **OpenTelemetry** tracing (`src/instrumentation.server.ts`); see Logging and Tracing
 - **svelte-sonner** for toast notifications (placed in root layout)
 
 ## What You Can Do
@@ -70,13 +70,22 @@ src/lib/features/<feature-name>/
 - **Users**: login never creates users. Create accounts with `pnpm user:create <username>`.
 - **Protected pages must live inside `(protected)/`** — the route guard checks `(protected)` in the route ID.
 - **Svelte 5 runes only** — no legacy Svelte 4 syntax.
-- **Imports from `src/lib` use `#lib` with the file extension** — e.g. `import { logger } from '#lib/logger.js'`, `#lib/components/ui/button/index.js`. SvelteKit 3 resolves `#lib` through the `imports` field in `package.json`. Configuration (adapter, preprocess) is passed to `sveltekit({ ... })` in `vite.config.ts`; there is no `svelte.config.js`. Environment variables are declared in `src/env.ts` and imported from `$app/env/public` / `$app/env/private`.
+- **Imports from `src/lib` use `#lib` with the file extension** — e.g. `import { logger } from '#lib/server/logger.js'`, `#lib/components/ui/button/index.js`. SvelteKit 3 resolves `#lib` through the `imports` field in `package.json`. Configuration (adapter, preprocess) is passed to `sveltekit({ ... })` in `vite.config.ts`; there is no `svelte.config.js`. Environment variables are declared in `src/env.ts` and imported from `$app/env/public` / `$app/env/private`.
 - **Run `svelte-autofixer` before finalizing any `.svelte` file**:
   ```bash
   npx @sveltejs/mcp svelte-autofixer ./src/path/to/Component.svelte
   ```
 - **Before merging, `bash scripts/check.sh` must pass**: it runs `pnpm lint`, `pnpm check` and `pnpm test:unit` in order and stops at the first failing step, which it names.
 - **E2E**: `pnpm test:e2e` installs the browser Playwright needs on first run (network required once), then builds and runs `e2e/`.
+
+## Logging and Tracing
+
+- **Server code only.** `import { logger } from '#lib/server/logger.js'` (pino). It lives under `src/lib/server/`, so importing it from a `.svelte` file or other browser code fails the build. The browser has no logger: tell the user with a toast or the error page.
+- **Every line is JSON carrying `trace_id` / `span_id`** of the current OpenTelemetry span, so the log lines and spans of one request find each other. SvelteKit's spans are on (`tracing: { server: true }` in `vite.config.ts`); `src/instrumentation.server.ts` registers the SDK and exports spans over OTLP/HTTP to `OTEL_EXPORTER_OTLP_ENDPOINT` only when it is set (otherwise nothing is sent). `OTEL_SERVICE_NAME` names the service. `LOG_LEVEL` sets the level (default `debug`, pretty-printed, in dev; `info` otherwise).
+- **Already logged — do not add your own:** one `info` line per request from `handleRequestLog` (`src/lib/hooks/request-log.ts`: method, route id, status, `duration_ms`), and every unexpected error from `handleError` (`src/lib/hooks/handle-error.ts`: `error` level, with stack). Let unexpected errors propagate instead of catching and logging them: `handleError` logs each one once and sends the client `{ message, errorId }`, where `errorId` is the trace id (shown on the error page; search the logs for it).
+- **Levels:** `error` when something failed and you handle it without rethrowing (e.g. the login action's `catch`, which returns a form message); `warn` for degraded but expected situations; `info` for rare, significant events (the request line covers routine traffic); `debug` for flow details (a login's outcome).
+- **Never log** passwords, tokens, session ids, cookies, `Authorization` headers, form data, whole request or response bodies or headers, or full URLs (log the route id; query strings carry secrets). Pass values as fields, never inside the message: `logger.debug({ outcome }, 'login rejected')`. Redaction (`REDACT_PATHS` in the logger: `password`, `token`, `access_token`, `refresh_token`, `cookie`, `set-cookie`, `authorization`) only sees fields. No `console.log`.
+- **Tests:** `captureLogs()` from `#lib/server/testing/logs.js` returns a logger that records every line, `inSpan()` runs code in a real span; `src/routes/login/page.server.test.ts` checks a login never logs a secret.
 
 ## Svelte 5 Quick Reference
 
