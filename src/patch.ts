@@ -84,3 +84,5 @@ export async function patch(latestVersion: string) {
 
 	p.outro(`Patched to ${latestVersion}. Commit .sveltekitten.json and changed files.`);
 }
+
+// AC4 probe: src changed without rebuilding dist
