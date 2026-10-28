@@ -13,8 +13,8 @@ export default defineConfig({
 		baseURL: 'http://localhost:3000',
 		trace: 'on-first-retry',
 		launchOptions: {
-			args: ['--no-sandbox', '--disable-setuid-sandbox'],
-		},
+			args: ['--no-sandbox', '--disable-setuid-sandbox']
+		}
 	},
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 	webServer: {
@@ -24,8 +24,8 @@ export default defineConfig({
 		env: {
 			DATABASE_URL: 'e2e.db',
 			NODE_ENV: 'test',
-			ORIGIN: 'http://localhost:3000',
+			ORIGIN: 'http://localhost:3000'
 		},
-		timeout: 120_000,
-	},
+		timeout: 120_000
+	}
 });

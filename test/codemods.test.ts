@@ -56,3 +56,14 @@ describe('chained codemods 0.3.0 → 0.3.3', () => {
 		await expectSnapshot(run.files, join(dir, variant));
 	});
 });
+
+describe('chained codemods 1.0.0 → 1.1.0', () => {
+	const dir = join(FIXTURES, 'chain-1.0.0-1.1.0');
+
+	it.each(variantsOf(dir))('%s: check.sh lands next to the lint-clean 1.0.1 files', async (variant) => {
+		const run = await runCodemodChain('1.0.0', '1.1.0', join(dir, variant, 'input'));
+		expect(run.log.map((l) => l.codemod.to)).toEqual(['1.0.1', '1.1.0']);
+		expect(run.warnings).toEqual([]);
+		await expectSnapshot(run.files, join(dir, variant));
+	});
+});

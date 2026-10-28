@@ -11,10 +11,12 @@
 	const message = $derived(itemFilters[filter].empty);
 </script>
 
-<div class="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
-	<InboxIcon class="h-10 w-10 text-muted-foreground/50 mb-3" />
+<div
+	class="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center"
+>
+	<InboxIcon class="mb-3 h-10 w-10 text-muted-foreground/50" />
 	<p class="text-sm font-medium text-foreground">{message}</p>
-	<p class="text-xs text-muted-foreground mt-1">
+	<p class="mt-1 text-xs text-muted-foreground">
 		Use the form to create new tasks or toggle existing ones.
 	</p>
 </div>

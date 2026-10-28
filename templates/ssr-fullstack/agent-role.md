@@ -43,6 +43,7 @@ src/lib/features/<feature-name>/
 ```
 
 **Why the extra layers?**
+
 - `contract.ts` declares an interface that `api.ts` implements and that `queries.ts` depends on instead of importing `api.ts` directly (dependency inversion). The implementation is provided through context: the root layout (`src/routes/+layout.svelte`) calls `setItemsApi(itemsApi)`, and each hook defaults to it, e.g. `useItems(initialDataGetter?, itemsApi: ItemsApi = useItemsApi())`. A test or component harness calls `setItemsApi(createFakeItemsApi())` to run a whole component tree against a fake, or passes an implementation to a single hook — no change to `queries.ts` either way.
 - The contract is more than the type: e.g. `toggleItem` must resolve with the full persisted item, failures reject with a readable `Error`. `testing/items-api-contract.ts` spells those promises out as tests, and `contract.test.ts` runs them against every implementation — including the fake in `testing/fake-items-api.ts`, so a test double can't drift from the real thing.
 - `service.ts` sits between the route handler (`src/routes/api/<feature>/+server.ts`) and the repository (`server.ts`). This is where authorization/business rules belong — e.g. verifying the requesting user owns a row before it's mutated or deleted. **Route handlers call the service, never `server.ts` directly.**
@@ -50,6 +51,7 @@ src/lib/features/<feature-name>/
 - Service errors extend `ApiError` (`$lib/utils/api-core.ts`) and carry their HTTP status (e.g. `ItemNotFoundError` → 404). Route handlers end with `catch (err) { return toErrorResponse(err, 'Failed to …'); }` from `$lib/server/http.ts`, so adding an error never means editing every handler.
 
 ### Canonical Reference Example
+
 - `src/lib/features/items/` — Reference CRUD feature demonstrating schemas, the `ItemsApi` contract, a Drizzle repository (`server.ts`) behind a use-case/authorization layer (`service.ts`), query key factories, mutations with cache invalidation, and toasts.
 - `src/routes/(protected)/items/` — Page showing server prefetching (`+page.server.ts`) combined with client hydration (`initialData`).
 - `src/routes/api/items/+server.ts` — API endpoint calling `itemsService` (which enforces per-item ownership) rather than the repository directly.
@@ -57,6 +59,7 @@ src/lib/features/<feature-name>/
 - The items example needs a session user: `/api/items` returns 401 without `locals.user`, and every row is scoped to its owner.
 
 ### Database Commands
+
 - `pnpm db:push` — Push schema changes directly to SQLite database
 - `pnpm db:studio` — Open Drizzle Studio in browser for database inspection
 - `pnpm db:generate` — Generate SQL migrations
@@ -71,21 +74,21 @@ src/lib/features/<feature-name>/
   ```bash
   npx @sveltejs/mcp svelte-autofixer ./src/path/to/Component.svelte
   ```
-- **Type-check and unit-test before finishing**: `pnpm check && pnpm test:unit`
+- **Before merging, `bash scripts/check.sh` must pass**: it runs `pnpm lint`, `pnpm check` and `pnpm test:unit` in order and stops at the first failing step, which it names.
 - **E2E**: `pnpm test:e2e` installs the browser Playwright needs on first run (network required once), then builds and runs `e2e/`.
 
 ## Svelte 5 Quick Reference
 
-| Avoid | Use |
-|---|---|
-| `let x = 0` (implicit reactivity) | `$state` |
-| `$:` reactive statements | `$derived` / `$effect` |
-| `export let` | `$props` |
-| `on:click` | `onclick` |
-| `<slot>` | `{#snippet}` + `{@render}` |
-| `<svelte:component this={X}>` | `<X>` |
-| `use:action` | `{@attach}` |
-| Svelte stores for shared state | class with `$state` fields |
+| Avoid                             | Use                        |
+| --------------------------------- | -------------------------- |
+| `let x = 0` (implicit reactivity) | `$state`                   |
+| `$:` reactive statements          | `$derived` / `$effect`     |
+| `export let`                      | `$props`                   |
+| `on:click`                        | `onclick`                  |
+| `<slot>`                          | `{#snippet}` + `{@render}` |
+| `<svelte:component this={X}>`     | `<X>`                      |
+| `use:action`                      | `{@attach}`                |
+| Svelte stores for shared state    | class with `$state` fields |
 
 - Use `$state.raw` for large API response objects (avoids deep proxy overhead)
 - Derive computed values with `$derived`; never compute inside `$effect`
@@ -103,4 +106,4 @@ src/lib/features/<feature-name>/
 7. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
 8. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte` (and `+page.server.ts` for server prefetching — load through the service from `$lib/server/services`, never `server.ts`).
 9. **Navigation**: Add route link in `src/routes/(protected)/+layout.svelte`.
-10. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `pnpm check` and `pnpm test:unit`.
+10. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `bash scripts/check.sh`.

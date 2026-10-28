@@ -143,10 +143,12 @@ Every domain feature lives in `src/lib/features/<name>/`, structured so it stays
 
 ## Scripts
 
-| Script        | Description                    |
-| ------------- | ------------------------------ |
-| `pnpm dev`    | Dev server on `0.0.0.0`        |
-| `pnpm build`  | Production build               |
-| `pnpm check`  | Type-check with `svelte-check` |
-| `pnpm lint`   | Prettier + ESLint              |
-| `pnpm format` | Auto-format                    |
+| Script | Description |
+| --- | --- |
+| `pnpm dev` | Dev server on `0.0.0.0` |
+| `pnpm build` | Production build |
+| `pnpm check` | Type-check with `svelte-check` |
+| `pnpm lint` | Prettier + ESLint |
+| `pnpm format` | Auto-format |
+| `pnpm test:unit` | Vitest unit tests |
+| `bash scripts/check.sh` | Run before merging: `lint`, `check`, `test:unit` in order; stops at the first failing step and names it. SSR FastAPI adds a step after `lint` that fails when `src/lib/api/paths/fastapi.d.ts` is out of date with `src/libs/api-specs/fastapi.json` (fix: `pnpm openapi:fastapi`) |

@@ -1,6 +1,6 @@
 {
 	"name": "create-sveltekitten",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"type": "module",
 	"description": "Create a new SvelteKitten project (SSR or SPA)",
 	"bin": {

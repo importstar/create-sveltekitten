@@ -1,6 +1,12 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardHeader,
+		CardTitle,
+		CardDescription,
+		CardContent
+	} from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { useHealthApi } from '$lib/features/health/context';
 	import { healthKeys, useHealthStatus } from '$lib/features/health/queries';
@@ -27,11 +33,12 @@
 	const clientHealthQuery = useHealthStatus();
 </script>
 
-<div class="container mx-auto max-w-5xl p-6 space-y-8">
+<div class="container mx-auto max-w-5xl space-y-8 p-6">
 	<div>
 		<h1 class="text-3xl font-bold tracking-tight">Dashboard</h1>
-		<p class="text-muted-foreground mt-1">
-			Welcome to your SvelteKitten project. Explore the architecture or jump into building your domain features.
+		<p class="mt-1 text-muted-foreground">
+			Welcome to your SvelteKitten project. Explore the architecture or jump into building your
+			domain features.
 		</p>
 	</div>
 
@@ -45,18 +52,19 @@
 					<CardTitle>Example CRUD Feature</CardTitle>
 				</div>
 				<CardDescription>
-					Explore the isolated Items tracker demonstrating Svelte 5 runes, Zod validation, and TanStack Query mutations.
+					Explore the isolated Items tracker demonstrating Svelte 5 runes, Zod validation, and
+					TanStack Query mutations.
 				</CardDescription>
 			</CardHeader>
 			<CardContent class="space-y-4">
-				<div class="rounded-md bg-background/80 p-3 text-xs text-muted-foreground space-y-1">
+				<div class="space-y-1 rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
 					<p class="font-medium text-foreground">💡 How to replace or delete:</p>
 					<p>1. Remove <code>src/lib/features/items/</code></p>
 					<p>2. Remove <code>src/routes/(protected)/items/</code></p>
 				</div>
 				<Button href="/items" class="w-full sm:w-auto">
 					Open Items Tracker
-					<ArrowRightIcon class="h-4 w-4 ml-1" />
+					<ArrowRightIcon class="ml-1 h-4 w-4" />
 				</Button>
 			</CardContent>
 		</Card>
@@ -75,16 +83,19 @@
 			<CardContent>
 				<ul class="space-y-2 text-xs text-muted-foreground">
 					<li class="flex items-center gap-2">
-						<CheckCircle2Icon class="h-4 w-4 text-green-500 shrink-0" />
+						<CheckCircle2Icon class="h-4 w-4 shrink-0 text-green-500" />
 						<span><strong>Schema first:</strong> Zod schema defines types & validators</span>
 					</li>
 					<li class="flex items-center gap-2">
-						<CheckCircle2Icon class="h-4 w-4 text-green-500 shrink-0" />
+						<CheckCircle2Icon class="h-4 w-4 shrink-0 text-green-500" />
 						<span><strong>Queries & Mutations:</strong> TanStack Query key factory</span>
 					</li>
 					<li class="flex items-center gap-2">
-						<CheckCircle2Icon class="h-4 w-4 text-green-500 shrink-0" />
-						<span><strong>Colocated UI:</strong> Feature components live inside <code>features/&lt;name&gt;/</code></span>
+						<CheckCircle2Icon class="h-4 w-4 shrink-0 text-green-500" />
+						<span
+							><strong>Colocated UI:</strong> Feature components live inside
+							<code>features/&lt;name&gt;/</code></span
+						>
 					</li>
 				</ul>
 			</CardContent>

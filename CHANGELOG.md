@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.1.0
+
+**New: `scripts/check.sh`** in every template and mode, the one command that says whether a change is ready to merge:
+
+```bash
+bash scripts/check.sh
+```
+
+It runs `pnpm lint`, `pnpm check` and `pnpm test:unit` in that order, stops at the first failing step and prints `check.sh: FAILED at step: <name>`. It exits 0 only when every step passes. Playwright is not part of it (too slow for the edit loop); run `pnpm test:e2e` separately.
+
+In SSR FastAPI (BFF) projects it also checks, right after `lint`, that `src/lib/api/paths/fastapi.d.ts` matches `src/libs/api-specs/fastapi.json`. It regenerates the types into place, compares them with the copy you had, and puts your copy back; when they differ it fails and tells you to run `pnpm openapi:fastapi`. This replaces the `git diff --exit-code src/lib/api` idea from the issue: the generated types are gitignored, so git cannot see them drift, and a fresh project has no git repository yet.
+
+`agent-role.md` now says `bash scripts/check.sh` must pass before merging.
+
+`pnpx create-sveltekitten patch` adds `scripts/check.sh` (run it with `bash`; patch does not set the executable bit) and updates the two lines in `agent-role.md` when they are unchanged.
+
+## 1.0.1
+
+**Bug fix**: `pnpm lint` failed on every freshly scaffolded project, and `pnpm check` failed on a fresh SPA project, so there was no clean baseline to check changes against.
+
+- `.prettierignore` leaves out generated files: `src/lib/components/ui/` (shadcn-svelte writes them in its own style and `shadcn-svelte add` overwrites them), `skills-lock.json` and `src/libs/api-specs/` (the spec fetched from FastAPI). `eslint.config.js` ignores `src/lib/components/ui/` for the same reason.
+- The hand-written files are formatted with the project's Prettier config (`AGENTS.md`, `agent-role.md`, `playwright.config.ts`, `e2e/mock-api.js`, `src/app.css`, the items components, the layouts and pages, and a few modules).
+- ESLint errors fixed: links and `goto()` calls use `resolve()` from `$app/paths` (`svelte/no-navigation-without-resolve`); `src/lib/logger.ts` takes `unknown` instead of `any`; in the SPA, unused variables and imports are gone from `auth-interceptor.ts`, `client.ts` (`createFastApiClient` no longer takes an unused `event`), `auth.svelte.ts` and the login form, and the login form types its data with the OpenAPI `Token` and `UserResponse` schemas instead of `any`.
+- SPA: `pnpm-lock.yaml` is deduplicated. It had a second copy of `zod` (4.4.3, pulled in by `sveltekit-superforms`), and `svelte-check` rejected `zod4(loginSchema)` in the login form because the two copies' types differ. The SSR lockfiles were deduplicated the same way in 1.0.0.
+
+`pnpx create-sveltekitten patch` updates `.prettierignore` and `eslint.config.js`, and replaces each of the other files only while it is still exactly the 1.0.0 template. For files you have edited, run `pnpm format` and fix what `pnpm lint` reports by hand. In an SPA project, also run `pnpm dedupe` (patch never edits lockfiles). Then `pnpm lint && pnpm check` should pass.
+
 ## 1.0.0
 
 **Breaking change in template structure.** The SSR template is split by mode. A new SSR project has only the code and dependencies of the mode you pick:

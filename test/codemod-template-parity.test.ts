@@ -19,7 +19,13 @@ const KNOWN_DIFFERENCES: Record<string, string> = {
 	'0.3.9/ssr/src/lib/features/items/port.ts': 'by design: codemods never delete files; the template has no port.ts',
 	'0.3.9/spa/src/lib/features/items/contract.ts':
 		'by design: the codemod keeps the interface in port.ts and makes contract.ts re-export it',
-	'0.3.9/spa/src/lib/features/items/port.ts': 'by design: codemods never delete files; the template has no port.ts'
+	'0.3.9/spa/src/lib/features/items/port.ts': 'by design: codemods never delete files; the template has no port.ts',
+	'1.1.0/spa/agent-role.md':
+		'no commit has version 1.0.1, so the input is the 1.0.0 file without the 1.0.1 Prettier formatting; chain-1.0.0-1.1.0 gets this file right',
+	'1.1.0/ssr-fastapi/agent-role.md':
+		'no commit has version 1.0.1, so the input is the 1.0.0 file without the 1.0.1 Prettier formatting; chain-1.0.0-1.1.0 gets this file right',
+	'1.1.0/ssr-fullstack/agent-role.md':
+		'no commit has version 1.0.1, so the input is the 1.0.0 file without the 1.0.1 Prettier formatting; chain-1.0.0-1.1.0 gets this file right'
 };
 
 const FIXTURES = fileURLToPath(new URL('./fixtures/codemods/', import.meta.url));

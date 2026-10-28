@@ -45,10 +45,12 @@ src/lib/features/<feature-name>/
 The contract is more than the type: e.g. `toggleItem` must resolve with the full persisted item, failures reject with a readable `Error`. `testing/items-api-contract.ts` spells those promises out as tests, and `contract.test.ts` runs them against every implementation — including the fake in `testing/fake-items-api.ts`, so a test double can't drift from the real thing.
 
 ### Canonical Reference Example
+
 - `src/lib/features/items/` — Reference CRUD feature demonstrating schemas, the `ItemsApi` contract, an in-memory mock implementation, query key factories, mutations with cache invalidation, and toasts.
 - `src/routes/(protected)/items/` — Client-side route demonstrating reactive TanStack Query state handling.
 
 ### How to Erase / Replace the Example Feature
+
 1. Delete the feature: `rm -rf src/lib/features/items`
 2. Delete the route: `rm -rf src/routes/(protected)/items`
 3. Remove the `<a href="/items">Items</a>` link in `src/routes/(protected)/+layout.svelte`.
@@ -63,21 +65,21 @@ The contract is more than the type: e.g. `toggleItem` must resolve with the full
   ```bash
   npx @sveltejs/mcp svelte-autofixer ./src/path/to/Component.svelte
   ```
-- **Type-check and unit-test before finishing**: `pnpm check && pnpm test:unit`
+- **Before merging, `bash scripts/check.sh` must pass**: it runs `pnpm lint`, `pnpm check` and `pnpm test:unit` in order and stops at the first failing step, which it names.
 - **E2E**: `pnpm test:e2e` installs the browser Playwright needs on first run (network required once), then builds and runs `e2e/`.
 
 ## Svelte 5 Quick Reference
 
-| Avoid | Use |
-|---|---|
-| `let x = 0` (implicit reactivity) | `$state` |
-| `$:` reactive statements | `$derived` / `$effect` |
-| `export let` | `$props` |
-| `on:click` | `onclick` |
-| `<slot>` | `{#snippet}` + `{@render}` |
-| `<svelte:component this={X}>` | `<X>` |
-| `use:action` | `{@attach}` |
-| Svelte stores for shared state | class with `$state` fields |
+| Avoid                             | Use                        |
+| --------------------------------- | -------------------------- |
+| `let x = 0` (implicit reactivity) | `$state`                   |
+| `$:` reactive statements          | `$derived` / `$effect`     |
+| `export let`                      | `$props`                   |
+| `on:click`                        | `onclick`                  |
+| `<slot>`                          | `{#snippet}` + `{@render}` |
+| `<svelte:component this={X}>`     | `<X>`                      |
+| `use:action`                      | `{@attach}`                |
+| Svelte stores for shared state    | class with `$state` fields |
 
 - Use `$state.raw` for large API response objects (avoids deep proxy overhead)
 - Derive computed values with `$derived`; never compute inside `$effect`
@@ -93,7 +95,7 @@ The contract is more than the type: e.g. `toggleItem` must resolve with the full
 5. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
 6. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte`.
 7. **Navigation**: Add route link in `src/routes/(protected)/+layout.svelte`.
-8. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `pnpm check` and `pnpm test:unit`.
+8. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `bash scripts/check.sh`.
 
 ## Out of Scope
 

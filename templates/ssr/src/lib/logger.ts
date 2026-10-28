@@ -30,17 +30,17 @@ const createLogger = () => {
 const baseLogger = createLogger();
 
 export const logger = Object.assign(baseLogger, {
-	inspect: (...args: any[]) => {
+	inspect: (...args: unknown[]) => {
 		if (dev) {
 			console.log(...args);
 		}
 	},
-	dir: (obj: any, options?: any) => {
+	dir: (obj: unknown, options?: Parameters<typeof console.dir>[1]) => {
 		if (dev) {
 			console.dir(obj, options);
 		}
 	},
-	table: (data: any, columns?: string[]) => {
+	table: (data: unknown, columns?: string[]) => {
 		if (dev) {
 			console.table(data, columns);
 		}

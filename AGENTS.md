@@ -110,7 +110,7 @@ No version bump needed unless the change affects `patch` behavior.
 pnpm test   # tsc && vitest run; CI runs the same after checking dist/
 ```
 
-Tests run the built `dist/`, the code users run. CI (`.github/workflows/ci.yml`) runs `pnpm build`, fails when `git diff --exit-code dist` shows a change (src edited without rebuilding and committing `dist/`), then `pnpm test`. A second job scaffolds each SSR mode with the CLI flags and runs `pnpm install --frozen-lockfile`, `pnpm check` and `pnpm build` in it. Locally, `pnpm test:unit` and `pnpm test:e2e` in a fresh scaffold of the mode you changed cover the template itself.
+Tests run the built `dist/`, the code users run. CI (`.github/workflows/ci.yml`) runs `pnpm build`, fails when `git diff --exit-code dist` shows a change (src edited without rebuilding and committing `dist/`), then `pnpm test`. A second job scaffolds every variant (SSR full-stack, SSR FastAPI, SPA) with the CLI flags and runs `pnpm install --frozen-lockfile`, `bash scripts/check.sh` (the template's own lint, check and unit tests, plus OpenAPI drift in FastAPI mode) and `pnpm build` in it, so a template change that breaks `pnpm lint` or `pnpm check` on a fresh project fails CI. Locally, `bash scripts/check.sh` and `pnpm test:e2e` in a fresh scaffold of the mode you changed cover the template itself.
 
 **Fixture test for a new codemod** (required: the suite fails for any codemod from 0.3.0 on without a fixture):
 

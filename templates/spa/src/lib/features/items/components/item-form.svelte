@@ -64,7 +64,12 @@
 		<p class="text-xs text-destructive">{error}</p>
 	{/if}
 
-	<Button type="submit" size="sm" class="w-full" disabled={createMutation.isPending || !title.trim()}>
+	<Button
+		type="submit"
+		size="sm"
+		class="w-full"
+		disabled={createMutation.isPending || !title.trim()}
+	>
 		{#if createMutation.isPending}
 			<LoaderCircle class="h-4 w-4 animate-spin" />
 			Adding...
