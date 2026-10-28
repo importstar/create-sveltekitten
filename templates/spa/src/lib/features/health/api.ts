@@ -1,4 +1,4 @@
-import client, { apiRequest } from '$lib/api/client';
+import client, { apiRequest } from '#lib/api/client.js';
 import type { HealthApi } from './contract';
 
 export const healthStatus = () => {

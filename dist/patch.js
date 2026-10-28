@@ -1,10 +1,10 @@
 import * as p from '@clack/prompts';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
 import { getApplicableCodemods } from './codemods/index.js';
-import { applyCodemods } from './codemods/apply.js';
+import { applyCodemods, findLeftovers, isSourceFile } from './codemods/apply.js';
 const SSR_MODES = ['fullstack', 'fastapi'];
 function fail(message) {
     p.log.error(message, { output: process.stderr });
@@ -50,6 +50,45 @@ async function resolveSsrMode(flagMode) {
         process.exit(0);
     }
     return mode;
+}
+// Where `leftovers` are looked for: the project's own source (plus root config files), not
+// dependencies or build output.
+const SOURCE_DIRS = ['src', 'e2e', 'scripts', 'test', 'tests'];
+async function readSourceFiles(root) {
+    const files = new Map();
+    // Config files at the root, e.g. eslint.config.js importing svelte.config.js.
+    for (const entry of await readdir(root, { withFileTypes: true })) {
+        if (entry.isFile() && isSourceFile(entry.name)) {
+            files.set(entry.name, await readFile(join(root, entry.name), 'utf-8'));
+        }
+    }
+    for (const dir of SOURCE_DIRS) {
+        const base = join(root, dir);
+        if (!existsSync(base))
+            continue;
+        for (const entry of await readdir(base, { recursive: true, withFileTypes: true })) {
+            if (!entry.isFile() || !isSourceFile(entry.name))
+                continue;
+            const full = join(entry.parentPath, entry.name);
+            files.set(relative(root, full).replaceAll('\\', '/'), await readFile(full, 'utf-8'));
+        }
+    }
+    return files;
+}
+/** Prints each applied codemod's notes, and the source files it could not migrate. */
+async function printFollowUps(applied) {
+    const withLeftovers = applied.filter((c) => c.leftovers);
+    const sources = withLeftovers.length > 0 ? await readSourceFiles(process.cwd()) : new Map();
+    for (const codemod of applied) {
+        if (codemod.leftovers) {
+            const files = findLeftovers(sources, codemod.leftovers.pattern);
+            if (files.length > 0) {
+                p.log.warn([`${codemod.from} → ${codemod.to}: ${codemod.leftovers.message}`, ...files.map((f) => `  ${f}`)].join('\n'));
+            }
+        }
+        if (codemod.notes?.length)
+            p.note(codemod.notes.join('\n'), `Next steps (${codemod.from} → ${codemod.to})`);
+    }
 }
 export async function patch(latestVersion, args = []) {
     const flags = parsePatchFlags(args);
@@ -115,8 +154,12 @@ export async function patch(latestVersion, args = []) {
         }
         const spinner = p.spinner();
         spinner.start('Applying changes...');
-        for (const { file, content, isNew } of pending) {
+        for (const { file, content, isNew, delete: remove } of pending) {
             const dest = join(process.cwd(), file);
+            if (remove) {
+                await rm(dest, { force: true });
+                continue;
+            }
             if (isNew)
                 await mkdir(dirname(dest), { recursive: true });
             await writeFile(dest, content);
@@ -126,5 +169,6 @@ export async function patch(latestVersion, args = []) {
     // Always update version after running applicable codemods
     const updated = { ...config, version: latestVersion };
     await writeFile(configPath, JSON.stringify(updated, null, '\t') + '\n');
+    await printFollowUps(applicable);
     p.outro(`Patched to ${latestVersion}. Commit .sveltekitten.json and changed files.`);
 }

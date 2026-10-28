@@ -1,4 +1,4 @@
-import { authStore } from '$lib/stores/auth.svelte';
+import { authStore } from '#lib/stores/auth.svelte.js';
 import client from './client';
 
 // Singleton state for token refresh coordination

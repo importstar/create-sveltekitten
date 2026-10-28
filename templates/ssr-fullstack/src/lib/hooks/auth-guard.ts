@@ -1,10 +1,10 @@
-import { isProtectedRoute } from '$lib/utils/auth';
+import type { Handle } from '@sveltejs/kit/hooks';
+import { isProtectedRoute } from '#lib/utils/auth.js';
 import {
 	validateSessionToken,
 	setSessionCookie,
 	deleteSessionCookie
-} from '$lib/server/auth/session';
-import type { Handle } from '@sveltejs/kit';
+} from '#lib/server/auth/session.js';
 
 export const handleAuthGuard: Handle = async ({ event, resolve }) => {
 	const { cookies, route } = event;

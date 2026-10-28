@@ -5,6 +5,8 @@
 export type TransformResult = string | {
     content: string;
     warnings: string[];
+    /** Remove the file from the project (`content` is ignored). Use `deleteFile` from helpers. */
+    delete?: boolean;
 };
 export interface FileTransform {
     /** Relative path from project root, e.g. "src/lib/auth.ts" */
@@ -22,6 +24,19 @@ export interface Codemod {
     from: string;
     to: string;
     transforms: FileTransform[];
+    /**
+     * Steps `patch` cannot do itself (e.g. run an upstream migration over the user's own code),
+     * printed after this codemod is applied.
+     */
+    notes?: string[];
+    /**
+     * After applying, `patch` lists project source files that still match this pattern, so code
+     * the codemod does not own (files the user wrote) is never left broken silently.
+     */
+    leftovers?: {
+        pattern: RegExp;
+        message: string;
+    };
 }
 /** Add new version modules here in ascending order. */
 export declare const codemods: Codemod[];

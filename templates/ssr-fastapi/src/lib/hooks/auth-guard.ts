@@ -1,5 +1,5 @@
-import { clearCookieTokens, isProtectedRoute, isTokenExpired } from '$lib/utils/auth';
-import type { Handle } from '@sveltejs/kit';
+import type { Handle } from '@sveltejs/kit/hooks';
+import { clearCookieTokens, isProtectedRoute, isTokenExpired } from '#lib/utils/auth.js';
 
 export const handleAuthGuard: Handle = async ({ event, resolve }) => {
 	const { cookies, route } = event;

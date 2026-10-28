@@ -1,7 +1,7 @@
-import { authStore } from '$lib/stores/auth.svelte';
+import { authStore } from '#lib/stores/auth.svelte.js';
 import { redirect } from '@sveltejs/kit';
-import { browser } from '$app/environment';
-import { ensureValidToken } from '$lib/api/auth-interceptor';
+import { browser } from '$app/env';
+import { ensureValidToken } from '#lib/api/auth-interceptor.js';
 
 /**
  * Auth guard for protected routes
@@ -11,7 +11,7 @@ import { ensureValidToken } from '$lib/api/auth-interceptor';
  *
  * @example
  * // src/routes/dashboard/+layout.ts
- * import { requireAuth } from '$lib/guards/auth';
+ * import { requireAuth } from '#lib/guards/auth.js';
  *
  * export const load = async () => {
  *   await requireAuth();
@@ -46,7 +46,7 @@ export async function requireAuth() {
  *
  * @example
  * // src/routes/login/+page.ts
- * import { redirectIfAuthenticated } from '$lib/guards/auth';
+ * import { redirectIfAuthenticated } from '#lib/guards/auth.js';
  *
  * export const load = async () => {
  *   await redirectIfAuthenticated();

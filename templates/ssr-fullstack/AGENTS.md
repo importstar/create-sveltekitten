@@ -44,6 +44,7 @@ This project is the **full-stack** mode of the SSR template: SvelteKit owns the 
 - **Database CLI**: `pnpm db:push` pushes schema changes to `sqlite.db`; `pnpm db:studio` inspects data.
 - **Auth**: server-side cookie sessions (`session_id`) stored in SQLite. `locals.user` / `locals.session` are set by `src/lib/hooks/auth-guard.ts`.
 - **Users**: login never creates users. Create accounts with `pnpm user:create <username>`.
-- **Business rules** live in `src/lib/features/<name>/service.ts`; routes call services from `$lib/server/services`, never the Drizzle repository (`server.ts`) directly.
+- **Business rules** live in `src/lib/features/<name>/service.ts`; routes call services from `#lib/server/services.js`, never the Drizzle repository (`server.ts`) directly.
 - Protected pages go inside `src/routes/(protected)/` — the auth guard runs automatically via `hooks.server.ts`.
-- Logger: `import { logger } from '$lib/logger'` — use instead of `console.log`.
+- Logger: `import { logger } from '#lib/logger.js'` — use instead of `console.log`.
+- **Running `node build`**: adapter-node assumes `https` and does not read `ORIGIN`. Over plain http, or behind a proxy, set `PROTOCOL_HEADER` / `HOST_HEADER` (e.g. `x-forwarded-proto`) or `paths: { origin }` in `sveltekit({ ... })`, or form posts fail the CSRF check with 403.

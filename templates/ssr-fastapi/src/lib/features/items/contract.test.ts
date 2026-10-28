@@ -1,5 +1,5 @@
 import createClient from 'openapi-fetch';
-import type { paths } from '$lib/api/paths/fastapi';
+import type { paths } from '#lib/api/paths/fastapi.js';
 import { createItemsApi } from './api';
 import { describeItemsApiContract } from './testing/items-api-contract';
 import { createFakeItemsApi } from './testing/fake-items-api';

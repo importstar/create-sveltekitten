@@ -1,4 +1,4 @@
-import type { components } from '$lib/api/paths/fastapi';
+import type { components } from '#lib/api/paths/fastapi.js';
 
 export type HealthStatus = components['schemas']['HealthCheckResponse'];
 

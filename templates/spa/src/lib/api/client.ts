@@ -1,7 +1,7 @@
 import createClient from 'openapi-fetch';
 import type { paths } from './openapi';
-import { PUBLIC_API_URL } from '$env/static/public';
-import { authStore } from '$lib/stores/auth.svelte';
+import { PUBLIC_API_URL } from '$app/env/public';
+import { authStore } from '#lib/stores/auth.svelte.js';
 
 export function createFastApiClient() {
 	const client = createClient<paths>({

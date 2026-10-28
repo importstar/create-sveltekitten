@@ -2,9 +2,9 @@ import { redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
-import { loginSchema } from '$lib/features/login/schema';
-import { logger } from '$lib/logger';
-import { setAuthTokens, isTokenExpired } from '$lib/utils/auth';
+import { loginSchema } from '#lib/features/login/schema.js';
+import { logger } from '#lib/logger.js';
+import { setAuthTokens, isTokenExpired } from '#lib/utils/auth.js';
 
 export const load = (async ({ cookies }) => {
 	const refreshToken = cookies.get('refresh_token');

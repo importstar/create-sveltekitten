@@ -1,4 +1,4 @@
-import type { DbItem } from '$lib/server/db/schema';
+import type { DbItem } from '#lib/server/db/schema.js';
 import type { Item } from './schema';
 
 /** The one place a database row becomes the `Item` shape clients receive. */

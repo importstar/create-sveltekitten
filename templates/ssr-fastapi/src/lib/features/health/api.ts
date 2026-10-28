@@ -1,4 +1,4 @@
-import fastapiClient from '$lib/api/fastapi-client';
+import fastapiClient from '#lib/api/fastapi-client.js';
 import type { HealthApi } from './contract';
 
 export const healthStatus = async () => {

@@ -4,7 +4,7 @@ export interface ProjectConfig {
     template: string;
     ssrMode?: 'fullstack' | 'fastapi';
 }
-export type TransformStatus = 'create' | 'modified' | 'unchanged' | 'skipped';
+export type TransformStatus = 'create' | 'modified' | 'unchanged' | 'skipped' | 'delete';
 export interface TransformLog {
     file: string;
     /** `skipped`: the file does not exist and the transform does not create it. */
@@ -25,12 +25,16 @@ export interface FileChange {
     file: string;
     content: string;
     isNew: boolean;
+    /** Remove the file instead of writing `content`. */
+    delete?: boolean;
 }
 export interface CodemodRun {
     /** One entry per codemod, in run order, for `patch` to print. */
     log: CodemodLog[];
-    /** Final content of every file a transform ran on, changed or not. */
+    /** Final content of every file a transform ran on, changed or not (deleted files excluded). */
     files: Map<string, string>;
+    /** Files a transform removed: `patch` deletes them. */
+    deleted: string[];
     /** Files whose final content differs from what is on disk: what `patch` writes. */
     changes: FileChange[];
     warnings: CodemodWarning[];
@@ -44,3 +48,10 @@ export interface CodemodRun {
  * sees the earlier one's changes instead of re-reading stale content and clobbering them.
  */
 export declare function applyCodemods(codemods: Codemod[], config: ProjectConfig, readFile: (file: string) => Promise<string | undefined>): Promise<CodemodRun>;
+/** Source files `patch` scans for leftovers: Svelte components and JS/TS modules. */
+export declare const isSourceFile: (file: string) => boolean;
+/**
+ * Source files in `files` (path → content) that match `pattern`: source a codemod could not migrate,
+ * usually because the user wrote it. Sorted, for `patch` to print.
+ */
+export declare function findLeftovers(files: Map<string, string>, pattern: RegExp): string[];

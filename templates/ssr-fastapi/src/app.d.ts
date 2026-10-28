@@ -1,6 +1,6 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 
-import type { paths } from '$lib/api/paths/fastapi';
+import type { paths } from '#lib/api/paths/fastapi.js';
 import type { Client } from 'openapi-fetch';
 
 // for information about these interfaces

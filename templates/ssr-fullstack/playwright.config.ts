@@ -11,6 +11,9 @@ export default defineConfig({
 	reporter: 'html',
 	use: {
 		baseURL: 'http://localhost:3000',
+		// adapter-node assumes https unless PROTOCOL_HEADER names a header (webServer.env below);
+		// over plain http the CSRF check would reject form posts.
+		extraHTTPHeaders: { 'x-forwarded-proto': 'http' },
 		trace: 'on-first-retry',
 		launchOptions: {
 			args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -24,7 +27,7 @@ export default defineConfig({
 		env: {
 			DATABASE_URL: 'e2e.db',
 			NODE_ENV: 'test',
-			ORIGIN: 'http://localhost:3000'
+			PROTOCOL_HEADER: 'x-forwarded-proto'
 		},
 		timeout: 120_000
 	}

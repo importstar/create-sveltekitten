@@ -1,5 +1,36 @@
 # Changelog
 
+## 2.0.0
+
+**Breaking: every template now uses SvelteKit 3** (issue #15). Node 22.17 or later is required (SvelteKit 3's own minimum; SPA projects said `>=20`, SSR `>=22`).
+
+What changed in the templates (SSR full-stack, SSR FastAPI and SPA):
+
+- `@sveltejs/kit` `^3.1.0`, `@sveltejs/adapter-node` `^6.0.0` / `@sveltejs/adapter-static` `^4.0.0`, `sveltekit-superforms` `^3.0.0` (2.x does not accept Kit 3) and `formsnap` `^2.1.0`. `@sveltejs/vite-plugin-svelte` (`^7.3.1`), `svelte`, `vite` and `typescript` already met Kit 3's minimums.
+- `svelte.config.js` is gone; Kit 3 refuses to start while it exists. The adapter and `vitePreprocess()` are passed to `sveltekit({ ... })` in `vite.config.ts`, and `eslint.config.js` no longer imports the file.
+- `$lib` is now `#lib`, declared in the `imports` field of `package.json`, and every `#lib` import has its file extension (`#lib/logger.js`, `#lib/components/ui/button/index.js`). `components.json` uses `#lib` for shadcn-svelte.
+- `tsconfig.json` extends `$app/tsconfig` and lists its own `include`.
+- Hook types (`Handle`) are imported from `@sveltejs/kit/hooks`.
+- Environment variables are declared in a new `src/env.ts` (`defineEnvVars`) and read from `$app/env/public` / `$app/env/private`; `$app/environment` is now `$app/env`. The `$env/*` modules and `$app/environment` still work in Kit 3 but print deprecation warnings.
+- `resolve()` paths have no leading slash (`resolve('home')`).
+- Full-stack route handlers return `Response.json(...)` instead of the deprecated `json(...)`.
+- adapter-node 6 ignores `ORIGIN` and assumes `https` unless `PROTOCOL_HEADER` names a header. The SSR e2e config now sends `x-forwarded-proto: http` with `PROTOCOL_HEADER=x-forwarded-proto` instead of setting `ORIGIN`. **If you deploy with `ORIGIN`**, set `paths: { origin }` in `sveltekit({ ... })` or `PROTOCOL_HEADER` / `HOST_HEADER` behind your proxy; otherwise form posts over plain http fail the CSRF check with 403.
+- Checked and unaffected: every cookie the templates set already passes `path: '/'`; no form action uses `fail()`; no endpoint returns a 204 body the client reads; no remote functions (`form.error`); `page.url` is only read; no `$app/stores`.
+
+Update existing projects. `patch` changes only files the template created; your own code is migrated by SvelteKit's tool:
+
+```bash
+pnpx create-sveltekitten patch       # template files → 2.0.0
+pnpm install                         # pnpm-lock.yaml cannot be patched
+git commit -am "chore: create-sveltekitten 2.0.0"
+npx sv migrate sveltekit-3           # your own code: $lib → #lib, hook types, $env, $app/stores, …
+pnpm check && pnpm build
+```
+
+The patch updates the versions, `engines.node` and `imports` in `package.json` (only if it is tab-indented JSON like the template), moves the config into `vite.config.ts`, deletes `svelte.config.js`, adds `src/env.ts`, and rewrites the imports and docs of each template file that still has the 1.1.4 lines; a file you edited is left alone with a warning. After writing, it lists every source file that still uses `$lib`, `$app/stores`, `$app/environment`, `$env/*`, `svelte.config.js` or hook types from `@sveltejs/kit`: run `npx sv migrate sveltekit-3` for those (it leaves the files `patch` already migrated as they are, and writes `MIGRATION_TASKS.md` with what it could not automate). If you edited `svelte.config.js` or `vite.config.ts`, `patch` keeps them and warns; move the adapter and `preprocess` into `sveltekit({ ... })` by hand, or let `sv migrate` do it.
+
+If `pnpm install` reports an unmet optional peer `@sveltejs/kit@^2.21.0` from `runed@0.35.1` (pulled in by `bits-ui`), it is harmless: `runed` only uses Kit in its `runed/kit` entry, which nothing in the templates imports. It goes away when `bits-ui` depends on a `runed` that accepts Kit 3.
+
 ## 1.1.4
 
 Docs fix for SPA projects. `AGENTS.md` and `agent-role.md` said `authStore` keeps the access token in memory. It saves its whole state, access token included, to `localStorage` (`auth_state`) so a reload keeps you signed in. Both files now say so and add one line on the risk: any injected script can read the token, so never render untrusted HTML with `{@html}`. Nothing about how auth works changed.

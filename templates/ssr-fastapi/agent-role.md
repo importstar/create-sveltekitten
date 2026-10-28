@@ -8,7 +8,7 @@ Anything that decides what a user may do or what data is valid lives in FastAPI:
 
 ## Tech Stack
 
-- **SvelteKit v2** + **Svelte 5** (runes mode) + **Vite 8**, deployed via `@sveltejs/adapter-node`
+- **SvelteKit v3** + **Svelte 5** (runes mode) + **Vite 8**, deployed via `@sveltejs/adapter-node`
 - **TypeScript** throughout
 - **openapi-fetch** typed against `src/lib/api/paths/fastapi.d.ts`, generated from `src/libs/api-specs/fastapi.json` by `openapi-typescript`
 - **Tailwind CSS v4** (via `@tailwindcss/vite` plugin — no separate config file)
@@ -20,7 +20,7 @@ Anything that decides what a user may do or what data is valid lives in FastAPI:
 
 ## How a request reaches FastAPI
 
-- Server code (`+page.server.ts`, form actions) calls `event.locals.fastapiClient`; browser code calls the `fastapiClient` default export of `$lib/api/fastapi-client`. Both send requests to `/api/proxy/**`.
+- Server code (`+page.server.ts`, form actions) calls `event.locals.fastapiClient`; browser code calls the `fastapiClient` default export of `#lib/api/fastapi-client.js`. Both send requests to `/api/proxy/**`.
 - `src/routes/api/proxy/[...slug]/+server.ts` forwards them to `BACKEND_API_URL` with `Authorization: Bearer <access_token cookie>`, never the browser's cookies. On a 401 it refreshes the access token once through `GET /v1/auth/refresh_token` (`src/lib/server/proxy/refresh.ts`) and retries.
 - `/login` calls `POST /v1/auth/login` and stores the returned tokens; a rejected login sets no cookie. `/logout` clears them.
 - `src/lib/hooks/auth-guard.ts` redirects `(protected)` pages to `/login` when there is no unexpired refresh token. It is a UX guard only: the token is decoded, not verified. FastAPI verifies every request.
@@ -67,6 +67,7 @@ src/lib/features/<feature-name>/
 - **No database, no local users.** Users and credentials live in FastAPI.
 - **Protected pages must live inside `(protected)/`** — the route guard checks `(protected)` in the route ID.
 - **Svelte 5 runes only** — no legacy Svelte 4 syntax.
+- **Imports from `src/lib` use `#lib` with the file extension** — e.g. `import { logger } from '#lib/logger.js'`, `#lib/components/ui/button/index.js`. SvelteKit 3 resolves `#lib` through the `imports` field in `package.json`. Configuration (adapter, preprocess) is passed to `sveltekit({ ... })` in `vite.config.ts`; there is no `svelte.config.js`. Environment variables are declared in `src/env.ts` and imported from `$app/env/public` / `$app/env/private`.
 - **Run `svelte-autofixer` before finalizing any `.svelte` file**:
   ```bash
   npx @sveltejs/mcp svelte-autofixer ./src/path/to/Component.svelte
@@ -96,11 +97,11 @@ src/lib/features/<feature-name>/
 
 1. **Backend first**: make sure FastAPI has the endpoints, with their rules, and that `src/libs/api-specs/fastapi.json` has them (`pnpm openapi:update`).
 2. **Schema**: Create `src/lib/features/your-feature/schema.ts` with Zod schemas for forms and the UI types.
-3. **DTO**: Create `dto.ts` mapping `components['schemas'][...]` from `$lib/api/paths/fastapi` to the UI types.
+3. **DTO**: Create `dto.ts` mapping `components['schemas'][...]` from `#lib/api/paths/fastapi.js` to the UI types.
 4. **Contract**: Create `contract.ts` with an interface describing the feature's client API surface. Add `contract.test.ts` that runs the contract suite against every implementation, including a fake in `testing/`.
 5. **API**: Create `api.ts` implementing `contract.ts` with `fastapiClient`. No rules here.
 6. **Queries**: Create `queries.ts` with a query key factory and hooks taking the contract implementation as an optional parameter defaulting to `useYourFeatureApi()` from `context.ts`. Provide the real implementation once in `src/routes/+layout.svelte` with `setYourFeatureApi(yourFeatureApi)`.
-7. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
+7. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `src/lib/components/ui/` and `toast` from `svelte-sonner`.
 8. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte` (and `+page.server.ts` prefetching through `locals.fastapiClient`).
 9. **Navigation**: Add route link in `src/routes/(protected)/+layout.svelte`.
 10. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `bash scripts/check.sh`.

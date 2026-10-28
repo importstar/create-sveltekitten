@@ -29,7 +29,7 @@ src/
   codemods/
     index.ts        — codemod registry + types
     apply.ts        — applyCodemods(): the pure engine patch.ts and the tests share
-    helpers.ts      — replaceFile / createFile / replaceText transform helpers
+    helpers.ts      — replaceFile / createFile / deleteFile / replaceText / replaceTexts transform helpers
 templates/
   ssr/              — SSR files shared by both modes (UI, login form, items UI, e2e/login + items tests)
   ssr-fullstack/    — overlay for ssrMode fullstack: Drizzle/SQLite, session auth, items service, package.json + lockfile
@@ -55,8 +55,9 @@ The version comes from `package.json` at scaffold time. The `patch` command uses
 
 Template features under `src/lib/features/<name>/` follow a layered pattern — `src/lib/features/items/` in each template is the canonical example, see `templates/ssr-fullstack/agent-role.md` / `templates/ssr-fastapi/agent-role.md` / `templates/spa/agent-role.md` for the full breakdown:
 
+- Imports between files under `src/lib` use the `#lib` subpath import with the file extension (`#lib/features/items/api.js`); SvelteKit 3 has no `$lib`. Kit options live in `sveltekit({ ... })` in `vite.config.ts` (no `svelte.config.js`), env vars in `src/env.ts`.
 - `schema.ts` (Zod) → `contract.ts` (interface: what any implementation of the feature's API must do) → `api.ts` (implements the contract) → `context.ts` (`createContext` for the contract; the root layout provides the real implementation) → `queries.ts` (TanStack Query hooks, depend on the contract via an optional parameter defaulting to the context value, not on `api.ts` directly)
-- SSR full-stack features additionally split `server.ts` (Drizzle repository, no business rules) from `service.ts` (use-case layer with authorization — e.g. ownership checks). `service.ts` declares the repository interface it needs and exports a `create<Feature>Service(repo)` factory; `server.ts` implements the interface, and `src/lib/server/services.ts` (composition root) wires them. Route handlers (`src/routes/api/<feature>/+server.ts`) call the service from `$lib/server/services`, never `server.ts` directly. `service.test.ts` tests the rules against an in-memory repository under `testing/`.
+- SSR full-stack features additionally split `server.ts` (Drizzle repository, no business rules) from `service.ts` (use-case layer with authorization — e.g. ownership checks). `service.ts` declares the repository interface it needs and exports a `create<Feature>Service(repo)` factory; `server.ts` implements the interface, and `src/lib/server/services.ts` (composition root) wires them. Route handlers (`src/routes/api/<feature>/+server.ts`) call the service from `#lib/server/services.js`, never `server.ts` directly. `service.test.ts` tests the rules against an in-memory repository under `testing/`.
 - SSR FastAPI (BFF) features have **no business rules in SvelteKit**: no `server.ts`, `service.ts` or database. `api.ts` calls FastAPI through `fastapiClient` (via `/api/proxy`), `dto.ts` maps FastAPI response types to the UI types, and `contract.test.ts` also runs the contract against the real `api.ts` over a fake FastAPI `fetch` in `testing/`. Rules belong in the FastAPI backend.
 
 When this pattern changes, update it in three places together: the template files themselves, the `agent-role.md` of each affected template (`templates/ssr-fullstack/`, `templates/ssr-fastapi/`, `templates/spa/`), and this section.
@@ -96,7 +97,8 @@ You must always do all these steps — never skip any:
 - `transform` must be a pure function (no side effects, no I/O)
 - Missing files are skipped automatically by the runner
 - Add one entry per bug fix — do not batch multiple unrelated fixes into one `from`/`to` pair
-- Use the helpers in `src/codemods/helpers.ts`: `replaceFile(from, to)` for a whole file, `createFile(to)` for a new one (`create: true`), `replaceText(from, to)` for a snippet. They leave an edited file alone **and return a warning**, which `patch` prints with the file and the codemod `from → to`. A hand-written transform returns `{ content, warnings }` when its pattern is missing instead of silently returning the content unchanged.
+- Use the helpers in `src/codemods/helpers.ts`: `replaceFile(from, to)` for a whole file, `createFile(to)` for a new one (`create: true`), `replaceText(from, to)` for a snippet, `replaceTexts([[from, to], …])` for several snippets applied all or nothing, `deleteFile(from)` to remove a file that is still the `from` template. They leave an edited file alone **and return a warning**, which `patch` prints with the file and the codemod `from → to`. A hand-written transform returns `{ content, warnings }` when its pattern is missing instead of silently returning the content unchanged.
+- A codemod never rewrites files the template did not create. When a release also needs changes in the user's own code (e.g. an upstream migration such as `npx sv migrate sveltekit-3`), give the codemod `notes` (steps `patch` prints afterwards) and `leftovers` (a pattern; `patch` lists the project source files that still match it) — see `src/codemods/v2.0.0.ts`.
 
 **If two codemods in the array touch the same file** (e.g. one adds a function, a later one changes how the route calls it), `patch.ts` chains them correctly within a single run — each transform sees the previous transform's output for that file, not stale on-disk content. This only works because transforms stay pure and guarded (check before replacing); don't rely on a transform re-reading the file from disk mid-run.
 

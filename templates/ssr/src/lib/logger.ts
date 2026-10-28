@@ -1,4 +1,4 @@
-import { dev } from '$app/environment';
+import { dev } from '$app/env';
 import pino from 'pino';
 
 // Create different logger configurations for server and browser

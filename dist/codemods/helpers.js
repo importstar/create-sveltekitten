@@ -39,3 +39,35 @@ export function replaceText(from, to) {
         return warn(content, PATTERN_NOT_FOUND_WARNING);
     };
 }
+/**
+ * Deletes a file that is still exactly the `from` template; any other content was edited and
+ * is left alone with `editedWarning`. A missing file is skipped by the runner.
+ */
+export function deleteFile(from, editedWarning = EDITED_FILE_WARNING) {
+    return (content) => {
+        if (normalizeNewlines(content) === from)
+            return { content: '', warnings: [], delete: true };
+        return warn(content, editedWarning);
+    };
+}
+/**
+ * Replaces each `from` with its `to`, all or nothing: every `from` must be in the file (each is
+ * replaced once, in order). A file that already has every `to` and no `from` is left alone; any
+ * other file was edited and is left alone with a warning.
+ */
+export function replaceTexts(pairs) {
+    return (content) => {
+        const normalized = normalizeNewlines(content);
+        // Checked first: an insertion keeps its context line, so its `from` is inside its `to`.
+        const applied = pairs.every(([from, to]) => normalized.includes(to) && (to.includes(from) || !normalized.includes(from)));
+        if (applied)
+            return content;
+        if (pairs.every(([from]) => normalized.includes(from))) {
+            let next = normalized;
+            for (const [from, to] of pairs)
+                next = next.replace(from, () => to);
+            return next;
+        }
+        return warn(content, PATTERN_NOT_FOUND_WARNING);
+    };
+}

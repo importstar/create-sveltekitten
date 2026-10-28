@@ -36,12 +36,20 @@ import v1_1_1 from './v1.1.1.js';
 import v1_1_2 from './v1.1.2.js';
 import v1_1_3 from './v1.1.3.js';
 import v1_1_4 from './v1.1.4.js';
+import v2_0_0 from './v2.0.0.js';
 
 /**
  * What a transform returns: the new content, or the content plus warnings for the person
  * running `patch` (e.g. the file was edited, so the change must be applied by hand).
  */
-export type TransformResult = string | { content: string; warnings: string[] };
+export type TransformResult =
+	| string
+	| {
+			content: string;
+			warnings: string[];
+			/** Remove the file from the project (`content` is ignored). Use `deleteFile` from helpers. */
+			delete?: boolean;
+	  };
 
 export interface FileTransform {
 	/** Relative path from project root, e.g. "src/lib/auth.ts" */
@@ -60,6 +68,16 @@ export interface Codemod {
 	from: string;
 	to: string;
 	transforms: FileTransform[];
+	/**
+	 * Steps `patch` cannot do itself (e.g. run an upstream migration over the user's own code),
+	 * printed after this codemod is applied.
+	 */
+	notes?: string[];
+	/**
+	 * After applying, `patch` lists project source files that still match this pattern, so code
+	 * the codemod does not own (files the user wrote) is never left broken silently.
+	 */
+	leftovers?: { pattern: RegExp; message: string };
 }
 
 /** Add new version modules here in ascending order. */
@@ -101,7 +119,8 @@ export const codemods: Codemod[] = [
 	v1_1_1,
 	v1_1_2,
 	v1_1_3,
-	v1_1_4
+	v1_1_4,
+	v2_0_0
 ];
 
 function parseVersion(v: string): [number, number, number] {

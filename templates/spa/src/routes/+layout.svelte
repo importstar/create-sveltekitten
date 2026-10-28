@@ -1,14 +1,14 @@
 <script lang="ts">
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '#lib/assets/favicon.svg';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
-	import { Toaster } from '$lib/components/ui/sonner/index.js';
-	import { PUBLIC_APP_TITLE } from '$env/static/public';
+	import { Toaster } from '#lib/components/ui/sonner/index.js';
+	import { PUBLIC_APP_TITLE } from '$app/env/public';
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
-	import { itemsApi } from '$lib/features/items/api';
-	import { setItemsApi } from '$lib/features/items/context';
-	import { healthApi } from '$lib/features/health/api';
-	import { setHealthApi } from '$lib/features/health/context';
+	import { itemsApi } from '#lib/features/items/api.js';
+	import { setItemsApi } from '#lib/features/items/context.js';
+	import { healthApi } from '#lib/features/health/api.js';
+	import { setHealthApi } from '#lib/features/health/context.js';
 
 	let { children, data } = $props();
 
