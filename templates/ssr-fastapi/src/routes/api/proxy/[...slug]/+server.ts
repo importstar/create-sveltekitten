@@ -90,7 +90,10 @@ const handler: RequestHandler = async ({ request, cookies, params, url }) => {
 
 		return createProxyResponse(response);
 	} catch (err) {
-		logger.error({ err }, `[API Proxy] Error fetching from API: [${request.method}] ${API_ENDPOINT}`);
+		logger.error(
+			{ err },
+			`[API Proxy] Error fetching from API: [${request.method}] ${API_ENDPOINT}`
+		);
 		throw error(502, `Bad Gateway: Could not connect to API service. Please try again later.`);
 	}
 };

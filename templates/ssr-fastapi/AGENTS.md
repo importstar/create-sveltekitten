@@ -17,18 +17,22 @@ Three skills are installed in `.agents/skills/`. Use them via your skill system:
 You have access to the Svelte MCP server for live Svelte 5 / SvelteKit documentation.
 
 ### 1. list-sections
+
 Use this FIRST to discover available documentation sections.
 When asked about Svelte or SvelteKit topics, ALWAYS call this before answering.
 
 ### 2. get-documentation
+
 Fetches full documentation for specific sections.
 After `list-sections`, fetch ALL sections relevant to the task — especially check `use_cases`.
 
 ### 3. svelte-autofixer
+
 Analyzes Svelte code for issues and suggestions.
 You MUST run this on every `.svelte` file before delivering it. Keep calling until no issues remain.
 
 ### 4. playground-link
+
 Generates a Svelte Playground link.
 Only call after user confirms they want one. NEVER call if code was written to project files.
 

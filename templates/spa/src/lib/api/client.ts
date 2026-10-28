@@ -3,13 +3,7 @@ import type { paths } from './openapi';
 import { PUBLIC_API_URL } from '$env/static/public';
 import { authStore } from '$lib/stores/auth.svelte';
 
-// Define a clear type for the SvelteKit event object for server-side usage.
-type ServerEvent = {
-	fetch: typeof fetch;
-	url: URL;
-};
-
-export function createFastApiClient(event?: ServerEvent) {
+export function createFastApiClient() {
 	const client = createClient<paths>({
 		baseUrl: PUBLIC_API_URL
 	});
@@ -22,7 +16,10 @@ const client = createFastApiClient();
 client.use({
 	async onRequest({ request }) {
 		if (authStore.accessToken) {
-			request.headers.set('Authorization', `${authStore.tokenType ?? 'Bearer'} ${authStore.accessToken}`);
+			request.headers.set(
+				'Authorization',
+				`${authStore.tokenType ?? 'Bearer'} ${authStore.accessToken}`
+			);
 		}
 		return request;
 	}
@@ -31,7 +28,7 @@ client.use({
 export default client;
 
 export const apiRequest = async <T>(
-	request: Promise<{ data?: T; error?: any; response?: Response }>
+	request: Promise<{ data?: T; error?: unknown; response?: Response }>
 ) => {
 	const { data, error } = await request;
 

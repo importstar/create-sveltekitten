@@ -1,5 +1,4 @@
 import { authStore } from '$lib/stores/auth.svelte';
-import type { components } from './openapi';
 import client from './client';
 
 // Singleton state for token refresh coordination
@@ -52,7 +51,7 @@ export async function refreshAccessToken(): Promise<boolean> {
 	refreshPromise = (async () => {
 		try {
 			// Use httpOnly cookie - browser sends cookie automatically
-			const { data, error, response } = await client.GET('/v1/auth/refresh_token', {
+			const { data, response } = await client.GET('/v1/auth/refresh_token', {
 				credentials: 'include'
 			});
 
@@ -68,15 +67,13 @@ export async function refreshAccessToken(): Promise<boolean> {
 			}
 
 			// API คืน GetAccessTokenResponse { access_token, token_type }
-			type GetAccessTokenResponse = components['schemas']['GetAccessTokenResponse'];
-
 			// Update แค่ access token (ไม่มี refresh_token ใหม่)
 			authStore.updateAccessToken(data.access_token, data.token_type);
 
 			// Notify all waiting requests
 			notifyRefreshComplete(data.access_token);
 			return true;
-		} catch (error) {
+		} catch {
 			notifyRefreshComplete(null);
 
 			// ไม่ redirect ที่นี่ ให้ caller จัดการ

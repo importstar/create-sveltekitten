@@ -111,7 +111,7 @@ class AuthStore {
 			const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
 			const payload = JSON.parse(atob(base64));
 			return payload;
-		} catch (e) {
+		} catch {
 			return null;
 		}
 	}
@@ -153,7 +153,7 @@ class AuthStore {
 		if (browser) {
 			try {
 				localStorage.setItem(AUTH_KEY, JSON.stringify(this.state));
-			} catch (e) {
+			} catch {
 				// Failed to save to localStorage
 			}
 		}
@@ -166,7 +166,7 @@ class AuthStore {
 				const parsed = JSON.parse(value);
 				this.state = parsed;
 			}
-		} catch (e) {
+		} catch {
 			localStorage.removeItem(AUTH_KEY);
 		} finally {
 			this.initialized = true;

@@ -12,8 +12,8 @@ export default defineConfig({
 		baseURL: 'http://localhost:4173',
 		trace: 'on-first-retry',
 		launchOptions: {
-			args: ['--no-sandbox', '--disable-setuid-sandbox'],
-		},
+			args: ['--no-sandbox', '--disable-setuid-sandbox']
+		}
 	},
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 	webServer: [
@@ -21,13 +21,13 @@ export default defineConfig({
 			command: 'node e2e/mock-api.js',
 			url: 'http://localhost:9001/v1/health',
 			reuseExistingServer: !process.env.CI,
-			timeout: 15_000,
+			timeout: 15_000
 		},
 		{
 			command: 'pnpm preview',
 			url: 'http://localhost:4173',
 			reuseExistingServer: !process.env.CI,
-			timeout: 60_000,
-		},
-	],
+			timeout: 60_000
+		}
+	]
 });

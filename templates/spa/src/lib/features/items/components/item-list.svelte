@@ -66,14 +66,9 @@
 		</div>
 	{:else if itemsQuery.isError}
 		<div class="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center">
-			<p class="text-sm text-destructive font-medium">Failed to load items</p>
-			<p class="text-xs text-muted-foreground mt-1">{itemsQuery.error?.message}</p>
-			<Button
-				variant="outline"
-				size="sm"
-				class="mt-3"
-				onclick={() => itemsQuery.refetch()}
-			>
+			<p class="text-sm font-medium text-destructive">Failed to load items</p>
+			<p class="mt-1 text-xs text-muted-foreground">{itemsQuery.error?.message}</p>
+			<Button variant="outline" size="sm" class="mt-3" onclick={() => itemsQuery.refetch()}>
 				Try Again
 			</Button>
 		</div>

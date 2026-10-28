@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
@@ -10,9 +9,11 @@
 	import { toast } from 'svelte-sonner';
 	import client from '$lib/api/client';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { authStore } from '$lib/stores/auth.svelte';
+	import type { components } from '$lib/api/openapi';
 
-	function extractErrorMessage(error: any): string {
+	function extractErrorMessage(error: unknown): string {
 		if (typeof error === 'object' && error !== null) {
 			if ('message' in error && typeof error.message === 'string') return error.message;
 			if ('detail' in error && typeof error.detail === 'string') return error.detail;
@@ -22,7 +23,10 @@
 		return 'Invalid credentials or server error';
 	}
 
-	async function handleLoginSuccess(loginData: any, meData: any) {
+	async function handleLoginSuccess(
+		loginData: components['schemas']['Token'],
+		meData: components['schemas']['UserResponse']
+	) {
 		authStore.login(loginData, {
 			username: meData.username,
 			name: meData.name,
@@ -33,7 +37,7 @@
 			last_login_date: meData.last_login_date,
 			created_at: meData.created_at
 		});
-		await goto('/home');
+		await goto(resolve('/home'));
 	}
 
 	const form = superForm(defaults(zod4(loginSchema)), {

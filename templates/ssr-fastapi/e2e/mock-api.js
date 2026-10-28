@@ -26,7 +26,7 @@ const server = createServer(async (req, res) => {
 				JSON.stringify({
 					access_token: MOCK_ACCESS_TOKEN,
 					refresh_token: MOCK_REFRESH_TOKEN,
-					token_type: 'bearer',
+					token_type: 'bearer'
 				})
 			);
 		} else {
@@ -79,7 +79,7 @@ const server = createServer(async (req, res) => {
 				title: body.title,
 				description: body.description ?? null,
 				completed: false,
-				created_at: new Date().toISOString(),
+				created_at: new Date().toISOString()
 			};
 			items.set(item.id, item);
 			res.writeHead(201);

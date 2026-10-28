@@ -56,6 +56,7 @@ src/lib/features/<feature-name>/
 - `api.ts` turns FastAPI errors (`{ detail }`) into `Error`s and responses into UI types via `dto.ts`. It holds no rules: ownership and validation are FastAPI's.
 
 ### Canonical Reference Example
+
 - `src/lib/features/items/` — CRUD feature over `GET/POST /v1/items` and `PATCH/DELETE /v1/items/{item_id}`.
 - `src/routes/(protected)/items/+page.server.ts` — server prefetch through `locals.fastapiClient`, hydrated on the client through `initialData`.
 - `e2e/mock-api.js` — the mock FastAPI used by `pnpm test:e2e`; add the endpoints a new e2e test needs here.
@@ -70,21 +71,21 @@ src/lib/features/<feature-name>/
   ```bash
   npx @sveltejs/mcp svelte-autofixer ./src/path/to/Component.svelte
   ```
-- **Type-check and unit-test before finishing**: `pnpm check && pnpm test:unit`
+- **Before merging, `bash scripts/check.sh` must pass**: it runs `pnpm lint`, an OpenAPI types check, `pnpm check` and `pnpm test:unit` in order and stops at the first failing step, which it names. The OpenAPI step fails when `src/lib/api/paths/fastapi.d.ts` is out of date with `src/libs/api-specs/fastapi.json`; fix that with `pnpm openapi:fastapi`.
 - **E2E**: `pnpm test:e2e` installs the browser Playwright needs on first run (network required once), then builds and runs `e2e/` against `e2e/mock-api.js`.
 
 ## Svelte 5 Quick Reference
 
-| Avoid | Use |
-|---|---|
-| `let x = 0` (implicit reactivity) | `$state` |
-| `$:` reactive statements | `$derived` / `$effect` |
-| `export let` | `$props` |
-| `on:click` | `onclick` |
-| `<slot>` | `{#snippet}` + `{@render}` |
-| `<svelte:component this={X}>` | `<X>` |
-| `use:action` | `{@attach}` |
-| Svelte stores for shared state | class with `$state` fields |
+| Avoid                             | Use                        |
+| --------------------------------- | -------------------------- |
+| `let x = 0` (implicit reactivity) | `$state`                   |
+| `$:` reactive statements          | `$derived` / `$effect`     |
+| `export let`                      | `$props`                   |
+| `on:click`                        | `onclick`                  |
+| `<slot>`                          | `{#snippet}` + `{@render}` |
+| `<svelte:component this={X}>`     | `<X>`                      |
+| `use:action`                      | `{@attach}`                |
+| Svelte stores for shared state    | class with `$state` fields |
 
 - Use `$state.raw` for large API response objects (avoids deep proxy overhead)
 - Derive computed values with `$derived`; never compute inside `$effect`
@@ -102,4 +103,4 @@ src/lib/features/<feature-name>/
 7. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
 8. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte` (and `+page.server.ts` prefetching through `locals.fastapiClient`).
 9. **Navigation**: Add route link in `src/routes/(protected)/+layout.svelte`.
-10. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `pnpm check` and `pnpm test:unit`.
+10. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `bash scripts/check.sh`.

@@ -11,7 +11,7 @@ const VALID = { username: 'admin', password: 'secret' };
 const CORS_HEADERS = {
 	'Access-Control-Allow-Origin': 'http://localhost:4173',
 	'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-	'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+	'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 };
 
 const server = createServer(async (req, res) => {
@@ -36,7 +36,7 @@ const server = createServer(async (req, res) => {
 				JSON.stringify({
 					access_token: MOCK_ACCESS_TOKEN,
 					refresh_token: MOCK_REFRESH_TOKEN,
-					token_type: 'bearer',
+					token_type: 'bearer'
 				})
 			);
 		} else {
@@ -57,7 +57,7 @@ const server = createServer(async (req, res) => {
 				is_active: true,
 				email: 'admin@test.com',
 				last_login_date: null,
-				created_at: new Date().toISOString(),
+				created_at: new Date().toISOString()
 			})
 		);
 		return;

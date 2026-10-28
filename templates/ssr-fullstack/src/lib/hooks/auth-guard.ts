@@ -1,5 +1,9 @@
 import { isProtectedRoute } from '$lib/utils/auth';
-import { validateSessionToken, setSessionCookie, deleteSessionCookie } from '$lib/server/auth/session';
+import {
+	validateSessionToken,
+	setSessionCookie,
+	deleteSessionCookie
+} from '$lib/server/auth/session';
 import type { Handle } from '@sveltejs/kit';
 
 export const handleAuthGuard: Handle = async ({ event, resolve }) => {

@@ -30,7 +30,7 @@
 
 <div
 	class="flex items-start justify-between gap-3 rounded-lg border p-4 transition-colors {item.completed
-		? 'bg-muted/40 border-muted'
+		? 'border-muted bg-muted/40'
 		: 'bg-card hover:border-primary/40'}"
 >
 	<div class="flex items-start gap-3 pt-0.5">
@@ -43,8 +43,8 @@
 		<div class="space-y-1">
 			<label
 				for="item-{item.id}"
-				class="text-sm font-medium leading-none cursor-pointer {item.completed
-					? 'line-through text-muted-foreground'
+				class="cursor-pointer text-sm leading-none font-medium {item.completed
+					? 'text-muted-foreground line-through'
 					: 'text-foreground'}"
 			>
 				{item.title}
@@ -68,7 +68,7 @@
 	<Button
 		variant="ghost"
 		size="icon"
-		class="size-8 text-muted-foreground hover:text-destructive shrink-0"
+		class="size-8 shrink-0 text-muted-foreground hover:text-destructive"
 		onclick={handleDelete}
 		disabled={isPending}
 		aria-label="Delete item"

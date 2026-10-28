@@ -10,7 +10,10 @@ describe('toErrorResponse', () => {
 	});
 
 	it('hides unknown errors behind a 500 with the fallback message', async () => {
-		const res = toErrorResponse(new Error('SQLITE_BUSY: database is locked'), 'Failed to update item');
+		const res = toErrorResponse(
+			new Error('SQLITE_BUSY: database is locked'),
+			'Failed to update item'
+		);
 		expect(res.status).toBe(500);
 		expect(await res.json()).toEqual({ error: 'Failed to update item' });
 	});
