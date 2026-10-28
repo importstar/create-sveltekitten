@@ -1,17 +1,17 @@
 <script lang="ts">
-	import * as Card from '$lib/components/ui/card/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import * as Form from '$lib/components/ui/form/index.js';
-	import * as Field from '$lib/components/ui/field/index.js';
+	import * as Card from '#lib/components/ui/card/index.js';
+	import { Input } from '#lib/components/ui/input/index.js';
+	import * as Form from '#lib/components/ui/form/index.js';
+	import * as Field from '#lib/components/ui/field/index.js';
 	import { defaults, superForm } from 'sveltekit-superforms';
 	import { zod4 } from 'sveltekit-superforms/adapters';
 	import { loginSchema } from '../schema';
 	import { toast } from 'svelte-sonner';
-	import client from '$lib/api/client';
+	import client from '#lib/api/client.js';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { authStore } from '$lib/stores/auth.svelte';
-	import type { components } from '$lib/api/openapi';
+	import { authStore } from '#lib/stores/auth.svelte.js';
+	import type { components } from '#lib/api/openapi.js';
 
 	function extractErrorMessage(error: unknown): string {
 		if (typeof error === 'object' && error !== null) {
@@ -37,7 +37,7 @@
 			last_login_date: meData.last_login_date,
 			created_at: meData.created_at
 		});
-		await goto(resolve('/home'));
+		await goto(resolve('home'));
 	}
 
 	const form = superForm(defaults(zod4(loginSchema)), {

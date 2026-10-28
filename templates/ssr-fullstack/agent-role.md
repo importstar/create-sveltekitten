@@ -4,7 +4,7 @@ You are a subagent working on a SvelteKit web application built from the **svelt
 
 ## Tech Stack
 
-- **SvelteKit v2** + **Svelte 5** (runes mode) + **Vite 8**, deployed via `@sveltejs/adapter-node`
+- **SvelteKit v3** + **Svelte 5** (runes mode) + **Vite 8**, deployed via `@sveltejs/adapter-node`
 - **TypeScript** throughout
 - **Database & ORM**: **SQLite** via `better-sqlite3` + **Drizzle ORM** (`src/lib/server/db/`) with `drizzle-kit`
 - **Tailwind CSS v4** (via `@tailwindcss/vite` plugin — no separate config file)
@@ -19,7 +19,7 @@ You are a subagent working on a SvelteKit web application built from the **svelt
 - Add new routes under `src/routes/` using SvelteKit file-based routing
 - Add pages that require authentication inside the `(protected)` route group — the auth guard runs automatically
 - Build UI components in `src/lib/components/ui/` following the existing `component.svelte` + `index.ts` pattern
-- Perform database operations in `$lib/server/db/` using Drizzle ORM
+- Perform database operations in `src/lib/server/db/` using Drizzle ORM
 - Add new feature slices in `src/lib/features/<feature-name>/`
 
 ## Feature Structure Pattern
@@ -48,7 +48,7 @@ src/lib/features/<feature-name>/
 - The contract is more than the type: e.g. `toggleItem` must resolve with the full persisted item, failures reject with a readable `Error`. `testing/items-api-contract.ts` spells those promises out as tests, and `contract.test.ts` runs them against every implementation — including the fake in `testing/fake-items-api.ts`, so a test double can't drift from the real thing.
 - `service.ts` sits between the route handler (`src/routes/api/<feature>/+server.ts`) and the repository (`server.ts`). This is where authorization/business rules belong — e.g. verifying the requesting user owns a row before it's mutated or deleted. **Route handlers call the service, never `server.ts` directly.**
 - `service.ts` doesn't import `server.ts`: it declares the repository interface it needs (e.g. `ItemsRepository`) and exports a factory, `createItemsService(repo)`. `server.ts` implements the interface with Drizzle, and `src/lib/server/services.ts` (the composition root) wires the two: `export const itemsService = createItemsService(drizzleItemsRepository)`. Routes import `itemsService` from there; tests build a service over an in-memory repository, so the rules are testable without SQLite.
-- Service errors extend `ApiError` (`$lib/utils/api-core.ts`) and carry their HTTP status (e.g. `ItemNotFoundError` → 404). Route handlers end with `catch (err) { return toErrorResponse(err, 'Failed to …'); }` from `$lib/server/http.ts`, so adding an error never means editing every handler.
+- Service errors extend `ApiError` (`src/lib/utils/api-core.ts`) and carry their HTTP status (e.g. `ItemNotFoundError` → 404). Route handlers end with `catch (err) { return toErrorResponse(err, 'Failed to …'); }` from `#lib/server/http.js`, so adding an error never means editing every handler.
 
 ### Canonical Reference Example
 
@@ -70,6 +70,7 @@ src/lib/features/<feature-name>/
 - **Users**: login never creates users. Create accounts with `pnpm user:create <username>`.
 - **Protected pages must live inside `(protected)/`** — the route guard checks `(protected)` in the route ID.
 - **Svelte 5 runes only** — no legacy Svelte 4 syntax.
+- **Imports from `src/lib` use `#lib` with the file extension** — e.g. `import { logger } from '#lib/logger.js'`, `#lib/components/ui/button/index.js`. SvelteKit 3 resolves `#lib` through the `imports` field in `package.json`. Configuration (adapter, preprocess) is passed to `sveltekit({ ... })` in `vite.config.ts`; there is no `svelte.config.js`. Environment variables are declared in `src/env.ts` and imported from `$app/env/public` / `$app/env/private`.
 - **Run `svelte-autofixer` before finalizing any `.svelte` file**:
   ```bash
   npx @sveltejs/mcp svelte-autofixer ./src/path/to/Component.svelte
@@ -101,9 +102,9 @@ src/lib/features/<feature-name>/
 2. **Server / DB**: Add table to `src/lib/server/db/schema.ts` and repository operations (no business rules) in `src/lib/features/your-feature/server.ts`.
 3. **Service**: Create `src/lib/features/your-feature/service.ts` — a repository interface plus a `createYourFeatureService(repo)` factory whose use cases enforce authorization (e.g. ownership checks) before mutating/deleting. Implement the interface in `server.ts`, wire it in `src/lib/server/services.ts`, and test the rules in `service.test.ts` with an in-memory repository.
 4. **Contract**: Create `src/lib/features/your-feature/contract.ts` with an interface describing the feature's client API surface. Add `contract.test.ts` that runs the contract suite (see `testing/items-api-contract.ts`) against every implementation, including a fake in `testing/`.
-5. **API / Endpoint**: Create `src/routes/api/your-feature/+server.ts` (calling the service from `$lib/server/services`, never `server.ts` directly) and `src/lib/features/your-feature/api.ts` implementing the `contract.ts` interface.
+5. **API / Endpoint**: Create `src/routes/api/your-feature/+server.ts` (calling the service from `#lib/server/services.js`, never `server.ts` directly) and `src/lib/features/your-feature/api.ts` implementing the `contract.ts` interface.
 6. **Queries**: Create `src/lib/features/your-feature/queries.ts` with query key factory and custom query/mutation hooks, each taking the contract implementation as an optional parameter that defaults to `useYourFeatureApi()` from `context.ts`. Provide the real implementation once in `src/routes/+layout.svelte` with `setYourFeatureApi(yourFeatureApi)`.
-7. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
-8. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte` (and `+page.server.ts` for server prefetching — load through the service from `$lib/server/services`, never `server.ts`).
+7. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `src/lib/components/ui/` and `toast` from `svelte-sonner`.
+8. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte` (and `+page.server.ts` for server prefetching — load through the service from `#lib/server/services.js`, never `server.ts`).
 9. **Navigation**: Add route link in `src/routes/(protected)/+layout.svelte`.
 10. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `bash scripts/check.sh`.

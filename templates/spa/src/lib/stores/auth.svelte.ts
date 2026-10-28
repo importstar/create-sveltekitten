@@ -1,5 +1,5 @@
-import { browser } from '$app/environment';
-import type { components } from '$lib/api/openapi';
+import { browser } from '$app/env';
+import type { components } from '#lib/api/openapi.js';
 
 type Token = components['schemas']['Token'];
 type User = components['schemas']['UserResponse'];

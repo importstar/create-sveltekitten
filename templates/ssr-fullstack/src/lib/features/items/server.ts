@@ -1,5 +1,5 @@
-import { db } from '$lib/server/db';
-import { items, type DbItem } from '$lib/server/db/schema';
+import { db } from '#lib/server/db/index.js';
+import { items, type DbItem } from '#lib/server/db/schema.js';
 import { eq, desc } from 'drizzle-orm';
 import type { CreateItemInput } from './schema';
 import type { ItemsRepository } from './service';

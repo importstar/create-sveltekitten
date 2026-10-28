@@ -41,9 +41,10 @@ Only call after user confirms they want one. NEVER call if code was written to p
 This project is the **BFF** (backend-for-frontend) mode of the SSR template: FastAPI owns the data, the users and every business rule. SvelteKit renders pages, keeps the tokens in httpOnly cookies and forwards API calls. There is no database here.
 
 - **No business rules in SvelteKit.** Authorization, ownership checks, validation that matters, and anything that decides what a user may do belong in FastAPI. SvelteKit code may shape data for display, never decide on it. If a feature needs a rule, add it to the FastAPI endpoint and call that endpoint.
-- **API calls**: through `event.locals.fastapiClient` (server) or the `fastapiClient` default export of `$lib/api/fastapi-client` (browser). Both go through `/api/proxy/**`, which adds `Authorization: Bearer` from the `access_token` cookie and refreshes it once on a 401.
+- **API calls**: through `event.locals.fastapiClient` (server) or the `fastapiClient` default export of `#lib/api/fastapi-client.js` (browser). Both go through `/api/proxy/**`, which adds `Authorization: Bearer` from the `access_token` cookie and refreshes it once on a 401.
 - **Types**: `src/lib/api/paths/fastapi.d.ts` is generated from `src/libs/api-specs/fastapi.json` (on `pnpm install`, or `pnpm openapi:fastapi`). After backend changes: `pnpm openapi:update`.
 - **Auth**: FastAPI JWTs (`access_token` / `refresh_token` cookies). `/login` calls `POST /v1/auth/login` and nothing else; a rejected login creates no cookie.
 - Protected pages go inside `src/routes/(protected)/` — a UX guard in `hooks.server.ts` redirects when there is no unexpired refresh token. FastAPI verifies the token on every request.
 - **E2E**: `e2e/mock-api.js` stands in for FastAPI during `pnpm test:e2e`.
-- Logger: `import { logger } from '$lib/logger'` — use instead of `console.log`.
+- Logger: `import { logger } from '#lib/logger.js'` — use instead of `console.log`.
+- **Running `node build`**: adapter-node assumes `https` and does not read `ORIGIN`. Over plain http, or behind a proxy, set `PROTOCOL_HEADER` / `HOST_HEADER` (e.g. `x-forwarded-proto`) or `paths: { origin }` in `sveltekit({ ... })`, or form posts fail the CSRF check with 403.

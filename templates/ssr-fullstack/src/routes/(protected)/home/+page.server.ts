@@ -1,4 +1,4 @@
-import type { HealthStatus } from '$lib/features/health/contract';
+import type { HealthStatus } from '#lib/features/health/contract.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch }) => {

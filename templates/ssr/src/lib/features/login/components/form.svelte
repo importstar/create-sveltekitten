@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { superForm, type Infer, type SuperValidated } from 'sveltekit-superforms';
-	import * as Card from '$lib/components/ui/card';
-	import * as Form from '$lib/components/ui/form';
-	import { loginSchema } from '$lib/features/login/schema';
+	import * as Card from '#lib/components/ui/card/index.js';
+	import * as Form from '#lib/components/ui/form/index.js';
+	import { loginSchema } from '#lib/features/login/schema.js';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
-	import { Input } from '$lib/components/ui/input';
-	import { Button } from '$lib/components/ui/button';
+	import { Input } from '#lib/components/ui/input/index.js';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
-	import FormDebug from '$lib/components/form/form-debug.svelte';
+	import FormDebug from '#lib/components/form/form-debug.svelte';
 	import { toast } from 'svelte-sonner';
 
 	type LoginFormProps = {

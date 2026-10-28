@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { db } from '$lib/server/db';
-import { sessions, users } from '$lib/server/db/schema';
+import { db } from '#lib/server/db/index.js';
+import { sessions, users } from '#lib/server/db/schema.js';
 import { createUser } from './users';
 import {
 	createSession,
@@ -11,8 +11,8 @@ import {
 	validateSessionToken
 } from './session';
 
-vi.mock('$lib/server/db', async () => {
-	const { createDb } = await import('$lib/server/db/client');
+vi.mock('#lib/server/db/index.js', async () => {
+	const { createDb } = await import('#lib/server/db/client.js');
 	return { db: createDb(':memory:') };
 });
 

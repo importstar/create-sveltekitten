@@ -117,7 +117,7 @@ pnpm openapi
 
 ## Common stack (both templates)
 
-- SvelteKit 2 · Svelte 5
+- SvelteKit 3 · Svelte 5
 - TypeScript 6
 - TailwindCSS 4
 - bits-ui · shadcn-svelte components

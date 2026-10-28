@@ -1,5 +1,5 @@
-import type { DbItem } from '$lib/server/db/schema';
-import { ApiError } from '$lib/utils/api-core';
+import type { DbItem } from '#lib/server/db/schema.js';
+import { ApiError } from '#lib/utils/api-core.js';
 import { toItemDto } from './dto';
 import type { CreateItemInput, Item } from './schema';
 

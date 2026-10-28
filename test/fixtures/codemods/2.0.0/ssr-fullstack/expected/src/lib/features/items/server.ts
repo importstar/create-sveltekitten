@@ -1,0 +1,54 @@
+import { db } from '#lib/server/db/index.js';
+import { items, type DbItem } from '#lib/server/db/schema.js';
+import { eq, desc } from 'drizzle-orm';
+import type { CreateItemInput } from './schema';
+import type { ItemsRepository } from './service';
+
+export type { DbItem };
+
+export async function getItems(userId: string): Promise<DbItem[]> {
+	return db
+		.select()
+		.from(items)
+		.where(eq(items.userId, userId))
+		.orderBy(desc(items.createdAt))
+		.all();
+}
+
+export async function getItemById(id: string): Promise<DbItem | undefined> {
+	return db.select().from(items).where(eq(items.id, id)).get();
+}
+
+export async function insertItem(input: CreateItemInput, userId: string): Promise<DbItem> {
+	const id = crypto.randomUUID();
+	const newItem = {
+		id,
+		userId,
+		title: input.title,
+		description: input.description ?? null,
+		completed: false,
+		createdAt: new Date()
+	};
+
+	db.insert(items).values(newItem).run();
+	return newItem;
+}
+
+export async function updateItemCompletion(
+	id: string,
+	completed: boolean
+): Promise<DbItem | undefined> {
+	return db.update(items).set({ completed }).where(eq(items.id, id)).returning().get();
+}
+
+export async function removeItem(id: string): Promise<void> {
+	db.delete(items).where(eq(items.id, id)).run();
+}
+
+export const drizzleItemsRepository: ItemsRepository = {
+	getById: getItemById,
+	listByUser: getItems,
+	insert: insertItem,
+	setCompleted: updateItemCompletion,
+	remove: removeItem
+};

@@ -1,4 +1,4 @@
-import type { DbItem } from '$lib/server/db/schema';
+import type { DbItem } from '#lib/server/db/schema.js';
 import type { ItemsRepository } from '../service';
 
 /** An `ItemsRepository` backed by a Map, for testing the service without SQLite. */

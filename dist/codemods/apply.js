@@ -10,6 +10,7 @@ export async function applyCodemods(codemods, config, readFile) {
     const originalContent = new Map(); // undefined = file didn't exist yet
     const currentContent = new Map();
     const isNewFile = new Map();
+    const deleted = new Set();
     const log = [];
     const warnings = [];
     for (const codemod of codemods) {
@@ -22,7 +23,11 @@ export async function applyCodemods(codemods, config, readFile) {
                 continue;
             let oldContent;
             let firstEncounter = false;
-            if (currentContent.has(t.file)) {
+            if (deleted.has(t.file)) {
+                transforms.push({ file: t.file, status: 'skipped', warnings: [] });
+                continue;
+            }
+            else if (currentContent.has(t.file)) {
                 oldContent = currentContent.get(t.file);
             }
             else {
@@ -46,9 +51,18 @@ export async function applyCodemods(codemods, config, readFile) {
             const result = t.transform(oldContent);
             const newContent = typeof result === 'string' ? result : result.content;
             const transformWarnings = typeof result === 'string' ? [] : result.warnings;
-            currentContent.set(t.file, newContent);
+            const remove = typeof result !== 'string' && result.delete === true;
+            if (remove) {
+                currentContent.delete(t.file);
+                deleted.add(t.file);
+            }
+            else {
+                currentContent.set(t.file, newContent);
+            }
             let status;
-            if (isNewFile.get(t.file) && firstEncounter)
+            if (remove)
+                status = 'delete';
+            else if (isNewFile.get(t.file) && firstEncounter)
                 status = 'create';
             else if (newContent === oldContent)
                 status = 'unchanged';
@@ -66,5 +80,24 @@ export async function applyCodemods(codemods, config, readFile) {
             changes.push({ file, content, isNew: isNewFile.get(file) ?? false });
         }
     }
-    return { log, files: currentContent, changes, warnings };
+    for (const file of deleted) {
+        // A file the run created and then deleted never reaches the disk.
+        if (originalContent.get(file) !== undefined)
+            changes.push({ file, content: '', isNew: false, delete: true });
+    }
+    return { log, files: currentContent, deleted: [...deleted], changes, warnings };
+}
+/** Source files `patch` scans for leftovers: Svelte components and JS/TS modules. */
+export const isSourceFile = (file) => /\.(svelte|[cm]?[jt]s)$/.test(file);
+/**
+ * Source files in `files` (path → content) that match `pattern`: source a codemod could not migrate,
+ * usually because the user wrote it. Sorted, for `patch` to print.
+ */
+export function findLeftovers(files, pattern) {
+    const flags = pattern.flags.replace('g', '');
+    const test = new RegExp(pattern.source, flags);
+    return [...files]
+        .filter(([file, content]) => isSourceFile(file) && test.test(content))
+        .map(([file]) => file)
+        .sort();
 }

@@ -4,7 +4,7 @@ You are a frontend subagent working on a SvelteKit web application built from th
 
 ## Tech Stack
 
-- **SvelteKit v2** + **Svelte 5** (runes mode) + **Vite 8**, deployed via `@sveltejs/adapter-static`
+- **SvelteKit v3** + **Svelte 5** (runes mode) + **Vite 8**, deployed via `@sveltejs/adapter-static`
 - **TypeScript** throughout
 - **Tailwind CSS v4** (via `@tailwindcss/vite` plugin — no separate config file)
 - **bits-ui** as the headless primitive layer; shadcn-style components in `src/lib/components/ui/`
@@ -19,9 +19,9 @@ You are a frontend subagent working on a SvelteKit web application built from th
 - Add pages that require authentication inside the `(protected)` route group — the auth guard runs automatically via `+layout.ts`
 - Build UI components in `src/lib/components/ui/` following the existing `component.svelte` + `index.ts` pattern
 - Add new features under `src/lib/features/<feature-name>/` with `api.ts`, `queries.ts`, `schema.ts`, and `components/`
-- Call backend APIs through the typed `client` from `$lib/api/client.ts` — uses `openapi-fetch` with `PUBLIC_API_URL`
-- Use `fetchWithAuth` from `$lib/api/auth-interceptor.ts` for authenticated requests with automatic token refresh
-- Use `authStore` from `$lib/stores/auth.svelte.ts` for client-side auth state
+- Call backend APIs through the typed `client` from `#lib/api/client.js` — uses `openapi-fetch` with `PUBLIC_API_URL`
+- Use `fetchWithAuth` from `#lib/api/auth-interceptor.js` for authenticated requests with automatic token refresh
+- Use `authStore` from `#lib/stores/auth.svelte.js` for client-side auth state
 
 ## Feature Structure Pattern
 
@@ -62,6 +62,7 @@ The contract is more than the type: e.g. `toggleItem` must resolve with the full
 - **XSS can steal the access token** — any script injected into the page can read `localStorage`, so never render untrusted HTML with `{@html}`.
 - **Protected pages must live inside `(protected)/`** — the layout guard calls `requireAuth()` automatically
 - **Svelte 5 runes only** — no legacy Svelte 4 syntax. See the table below.
+- **Imports from `src/lib` use `#lib` with the file extension** — e.g. `import { logger } from '#lib/logger.js'`, `#lib/components/ui/button/index.js`. SvelteKit 3 resolves `#lib` through the `imports` field in `package.json`. Configuration (adapter, preprocess) is passed to `sveltekit({ ... })` in `vite.config.ts`; there is no `svelte.config.js`. Environment variables are declared in `src/env.ts` and imported from `$app/env/public` / `$app/env/private`.
 - **Run `svelte-autofixer` before finalizing any `.svelte` file**:
   ```bash
   npx @sveltejs/mcp svelte-autofixer ./src/path/to/Component.svelte
@@ -93,7 +94,7 @@ The contract is more than the type: e.g. `toggleItem` must resolve with the full
 2. **Contract**: Create `src/lib/features/your-feature/contract.ts` with an interface describing the feature's API surface. Add `contract.test.ts` that runs the contract suite (see `testing/items-api-contract.ts`) against every implementation, including a fake in `testing/`.
 3. **API**: Create `src/lib/features/your-feature/api.ts` with typed endpoint functions implementing the `contract.ts` interface.
 4. **Queries**: Create `src/lib/features/your-feature/queries.ts` with query key factory and custom query/mutation hooks, each taking the contract implementation as an optional parameter that defaults to `useYourFeatureApi()` from `context.ts`. Provide the real implementation once in `src/routes/+layout.svelte` with `setYourFeatureApi(yourFeatureApi)`.
-5. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `$lib/components/ui/` and `toast` from `svelte-sonner`.
+5. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `src/lib/components/ui/` and `toast` from `svelte-sonner`.
 6. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte`.
 7. **Navigation**: Add route link in `src/routes/(protected)/+layout.svelte`.
 8. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `bash scripts/check.sh`.
@@ -101,6 +102,6 @@ The contract is more than the type: e.g. `toggleItem` must resolve with the full
 ## Out of Scope
 
 - Adding server-side load functions or `+page.server.ts` files (this is a static SPA)
-- Modifying the auth interceptor token refresh logic in `$lib/api/auth-interceptor.ts`
-- Changing cookie names or TTLs in `$lib/utils/auth.ts`
+- Modifying the auth interceptor token refresh logic in `src/lib/api/auth-interceptor.ts`
+- Changing cookie names or TTLs in `src/lib/utils/auth.ts`
 - Regenerating OpenAPI types (`pnpm openapi` — do this only if the task explicitly requires it)

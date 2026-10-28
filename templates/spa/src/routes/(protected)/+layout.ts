@@ -1,5 +1,5 @@
-import { requireAuth } from '$lib/guards/auth';
-import { authStore } from '$lib/stores/auth.svelte';
+import { requireAuth } from '#lib/guards/auth.js';
+import { authStore } from '#lib/stores/auth.svelte.js';
 import type { LayoutLoad } from './$types';
 
 export const load = (async () => {

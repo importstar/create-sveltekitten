@@ -1,0 +1,14 @@
+import { redirect } from '@sveltejs/kit';
+import { deleteSessionCookie, invalidateSession } from '#lib/server/auth/session.js';
+import type { Actions } from './$types';
+
+export const actions: Actions = {
+	default: async ({ cookies }) => {
+		const sessionId = cookies.get('session_id');
+		if (sessionId) {
+			await invalidateSession(sessionId);
+			deleteSessionCookie(cookies);
+		}
+		throw redirect(303, '/login');
+	}
+};

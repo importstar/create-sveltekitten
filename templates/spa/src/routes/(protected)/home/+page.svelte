@@ -5,9 +5,9 @@
 		CardTitle,
 		CardDescription,
 		CardContent
-	} from '$lib/components/ui/card';
-	import { Button } from '$lib/components/ui/button';
-	import { useHealthStatus } from '$lib/features/health/queries';
+	} from '#lib/components/ui/card/index.js';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { useHealthStatus } from '#lib/features/health/queries.js';
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import CheckCircle2Icon from '@lucide/svelte/icons/check-circle-2';

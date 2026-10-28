@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ApiError } from '$lib/utils/api-core';
+import { ApiError } from '#lib/utils/api-core.js';
 import { toErrorResponse } from './http';
 
 describe('toErrorResponse', () => {

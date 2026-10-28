@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import { ItemList, ItemForm } from '$lib/features/items';
+	import { ItemList, ItemForm } from '#lib/features/items/index.js';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 
 	let { data }: PageProps = $props();

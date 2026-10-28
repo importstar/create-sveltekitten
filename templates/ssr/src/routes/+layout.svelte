@@ -1,14 +1,14 @@
 <script lang="ts">
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.svg';
-	import { env } from '$env/dynamic/public';
+	import favicon from '#lib/assets/favicon.svg';
+	import { PUBLIC_APP_TITLE } from '$app/env/public';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
-	import { Toaster } from '$lib/components/ui/sonner/index.js';
+	import { Toaster } from '#lib/components/ui/sonner/index.js';
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
-	import { itemsApi } from '$lib/features/items/api';
-	import { setItemsApi } from '$lib/features/items/context';
-	import { healthApi } from '$lib/features/health/api';
-	import { setHealthApi } from '$lib/features/health/context';
+	import { itemsApi } from '#lib/features/items/api.js';
+	import { setItemsApi } from '#lib/features/items/context.js';
+	import { healthApi } from '#lib/features/health/api.js';
+	import { setHealthApi } from '#lib/features/health/context.js';
 
 	let { children, data } = $props();
 
@@ -21,7 +21,7 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 	<title>
-		{env.PUBLIC_APP_TITLE}
+		{PUBLIC_APP_TITLE}
 	</title>
 </svelte:head>
 

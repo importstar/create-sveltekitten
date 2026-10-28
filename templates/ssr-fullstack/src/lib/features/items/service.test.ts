@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DbItem } from '$lib/server/db/schema';
+import type { DbItem } from '#lib/server/db/schema.js';
 import { createItemsService, ItemForbiddenError, ItemNotFoundError } from './service';
 import { createInMemoryItemsRepository } from './testing/in-memory-repository';
 

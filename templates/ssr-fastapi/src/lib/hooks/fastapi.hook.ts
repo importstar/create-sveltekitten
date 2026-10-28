@@ -1,5 +1,5 @@
-import { createFastApiClient } from '$lib/api/fastapi-client';
-import type { Handle } from '@sveltejs/kit';
+import type { Handle } from '@sveltejs/kit/hooks';
+import { createFastApiClient } from '#lib/api/fastapi-client.js';
 
 export const handleFastApiClient: Handle = async ({ event, resolve }) => {
 	// Handle FastAPI requests here

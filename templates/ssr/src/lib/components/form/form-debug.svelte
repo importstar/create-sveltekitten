@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { dev } from '$app/environment';
+	import { dev } from '$app/env';
 	import SuperDebug from 'sveltekit-superforms';
 
 	let { formData } = $props();

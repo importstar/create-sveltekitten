@@ -2,11 +2,11 @@ import { redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
-import { loginSchema } from '$lib/features/login/schema';
-import { logger } from '$lib/logger';
-import { db } from '$lib/server/db';
-import { authenticate } from '$lib/server/auth/users';
-import { createSession, generateSessionToken, setSessionCookie } from '$lib/server/auth/session';
+import { loginSchema } from '#lib/features/login/schema.js';
+import { logger } from '#lib/logger.js';
+import { db } from '#lib/server/db/index.js';
+import { authenticate } from '#lib/server/auth/users.js';
+import { createSession, generateSessionToken, setSessionCookie } from '#lib/server/auth/session.js';
 
 export const load = (async ({ locals }) => {
 	if (locals.user) {

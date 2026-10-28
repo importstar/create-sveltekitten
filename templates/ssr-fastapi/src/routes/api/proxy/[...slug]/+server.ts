@@ -1,8 +1,8 @@
-import { env } from '$env/dynamic/private';
-import { logger } from '$lib/logger';
+import { BACKEND_API_URL } from '$app/env/private';
+import { logger } from '#lib/logger.js';
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { refreshTokens } from '$lib/server/proxy/refresh';
+import { refreshTokens } from '#lib/server/proxy/refresh.js';
 
 // Rejects slugs that could leave the backend base path once the URL is resolved, e.g.
 // `v1/../admin` when BACKEND_API_URL carries a path prefix.
@@ -16,7 +16,7 @@ function isSafeProxyPath(slug: string): boolean {
 const backendFetch: typeof fetch = (input, init) => fetch(input, init);
 
 const handler: RequestHandler = async ({ request, cookies, params, url }) => {
-	if (!env.BACKEND_API_URL) {
+	if (!BACKEND_API_URL) {
 		logger.error('BACKEND_API_URL environment variable is not set.');
 		throw new Error('BACKEND_API_URL environment variable is not set.');
 	}
@@ -27,7 +27,7 @@ const handler: RequestHandler = async ({ request, cookies, params, url }) => {
 	}
 
 	const accessToken = cookies.get('access_token');
-	const backendBase = env.BACKEND_API_URL.replace(/\/$/, '');
+	const backendBase = BACKEND_API_URL.replace(/\/$/, '');
 	const API_ENDPOINT = `${backendBase}/${path}${url.search}`;
 
 	logger.debug(`${params.slug}`);

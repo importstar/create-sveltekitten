@@ -1,4 +1,4 @@
-import type { components } from '$lib/api/openapi';
+import type { components } from '#lib/api/openapi.js';
 
 export type HealthStatus = components['schemas']['HealthCheckResponse'];
 

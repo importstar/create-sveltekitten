@@ -1,5 +1,5 @@
-import { db } from '$lib/server/db';
-import { sessions, users, type User, type Session } from '$lib/server/db/schema';
+import { db } from '#lib/server/db/index.js';
+import { sessions, users, type User, type Session } from '#lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import type { Cookies } from '@sveltejs/kit';
 import { createHash, randomBytes } from 'node:crypto';

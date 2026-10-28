@@ -1,4 +1,4 @@
-import fastapiClient from '$lib/api/fastapi-client';
+import fastapiClient from '#lib/api/fastapi-client.js';
 import type { ItemsApi } from './contract';
 import { toItem } from './dto';
 

@@ -1,4 +1,4 @@
-import type { components } from '$lib/api/paths/fastapi';
+import type { components } from '#lib/api/paths/fastapi.js';
 import { itemSchema, type Item } from './schema';
 
 export type ItemResponse = components['schemas']['ItemResponse'];

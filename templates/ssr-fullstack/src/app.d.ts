@@ -1,6 +1,6 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 
-import type { User, Session } from '$lib/server/db/schema';
+import type { User, Session } from '#lib/server/db/schema.js';
 
 // for information about these interfaces
 declare global {
