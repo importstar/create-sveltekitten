@@ -21,3 +21,35 @@ jobs:
       - name: dist/ matches src/ (run pnpm build and commit dist/)
         run: git diff --exit-code dist && test -z "$(git ls-files --others --exclude-standard dist)"
       - run: pnpm test
+
+  # A fresh project of each SSR mode must install from its own lockfile, type-check and build.
+  ssr-mode:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [fullstack, fastapi]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            templates/ssr-${{ matrix.mode }}/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Scaffold ssr/${{ matrix.mode }}
+        working-directory: ${{ runner.temp }}
+        run: node "$GITHUB_WORKSPACE/dist/index.js" --name app --template ssr --mode ${{ matrix.mode }} --yes
+      - name: pnpm install --frozen-lockfile
+        working-directory: ${{ runner.temp }}/app
+        run: pnpm install --frozen-lockfile
+      - run: pnpm check
+        working-directory: ${{ runner.temp }}/app
+      - run: pnpm build
+        working-directory: ${{ runner.temp }}/app
+      - run: pnpm test:unit
+        working-directory: ${{ runner.temp }}/app

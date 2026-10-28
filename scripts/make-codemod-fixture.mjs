@@ -107,11 +107,18 @@ const applies = (t, v) =>
 	(!t.template || t.template === v.template) && (!t.ssrMode || t.ssrMode === v.ssrMode);
 
 /** The `.env` the CLI at `commit` writes, read from its `envLines` expression. */
-function envFile(commit, template) {
+function envFile(commit, variant) {
 	const source = show(commit, 'src/index.ts') ?? '';
-	const match = source.match(/envLines\s*=\s*template === 'ssr'\s*\?\s*`([^`]*)`\s*:\s*`([^`]*)`/);
-	if (!match) throw new Error(`Cannot find envLines in src/index.ts at ${commit}`);
-	return match[template === 'ssr' ? 1 : 2]
+	// From 1.0.0: spa ? … : ssrMode === 'fullstack' ? … : … (fastapi). Before: ssr ? … : … (spa).
+	const perMode = source.match(
+		/envLines\s*=\s*template === 'spa'\s*\?\s*`([^`]*)`\s*:\s*ssrMode === 'fullstack'\s*\?\s*`([^`]*)`\s*:\s*`([^`]*)`/
+	);
+	const shared = source.match(/envLines\s*=\s*template === 'ssr'\s*\?\s*`([^`]*)`\s*:\s*`([^`]*)`/);
+	let lines;
+	if (perMode) lines = perMode[variant.template === 'spa' ? 1 : variant.ssrMode === 'fullstack' ? 2 : 3];
+	else if (shared) lines = shared[variant.template === 'ssr' ? 1 : 2];
+	else throw new Error(`Cannot find envLines in src/index.ts at ${commit}`);
+	return lines
 		.replaceAll('${projectName}', PROJECT_NAME)
 		.replaceAll('${backendUrl}', BACKEND_URL)
 		.replaceAll('\\n', '\n');
@@ -119,9 +126,9 @@ function envFile(commit, template) {
 
 /** A file as a project scaffolded by the CLI at `commit` has it, or undefined. */
 function scaffoldedFile(commit, variant, file) {
-	if (file === '.env') return envFile(commit, variant.template);
-	const fromOverlay =
-		variant.ssrMode === 'fullstack' ? show(commit, `templates/ssr-fullstack/${file}`) : undefined;
+	if (file === '.env') return envFile(commit, variant);
+	// templates/ssr-<mode> overlays templates/ssr (ssr-fastapi exists from 1.0.0 on).
+	const fromOverlay = variant.ssrMode ? show(commit, `templates/ssr-${variant.ssrMode}/${file}`) : undefined;
 	let content = fromOverlay ?? show(commit, `templates/${variant.template}/${file}`);
 	if (content === undefined) return undefined;
 	content = content

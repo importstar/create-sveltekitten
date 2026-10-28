@@ -2,10 +2,61 @@ import * as p from '@clack/prompts';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { parseArgs } from 'node:util';
 import { getApplicableCodemods } from './codemods/index.js';
 import { applyCodemods, type ProjectConfig } from './codemods/apply.js';
 
-export async function patch(latestVersion: string) {
+type SsrMode = NonNullable<ProjectConfig['ssrMode']>;
+const SSR_MODES: readonly SsrMode[] = ['fullstack', 'fastapi'];
+
+function fail(message: string): never {
+	p.log.error(message, { output: process.stderr });
+	process.exit(1);
+}
+
+function parsePatchFlags(args: string[]): { mode?: SsrMode } {
+	let values;
+	try {
+		({ values } = parseArgs({ args, options: { mode: { type: 'string' } }, strict: true }));
+	} catch (err) {
+		fail(`${(err as Error).message}\nUsage: create-sveltekitten patch [--mode fullstack|fastapi]`);
+	}
+	if (values.mode !== undefined && !(SSR_MODES as readonly string[]).includes(values.mode)) {
+		fail(`Invalid --mode "${values.mode}". Allowed: ${SSR_MODES.join(', ')}.`);
+	}
+	return { mode: values.mode as SsrMode | undefined };
+}
+
+/**
+ * SSR projects from before ssrMode was recorded don't say which mode they are, and codemods
+ * that target one mode would skip them. Ask once (or take --mode) and save the answer.
+ */
+async function resolveSsrMode(flagMode: SsrMode | undefined): Promise<SsrMode> {
+	if (flagMode) return flagMode;
+	const mode = await p.select<SsrMode>({
+		message: 'This SSR project does not record its mode in .sveltekitten.json. Which one is it?',
+		options: [
+			{
+				value: 'fullstack',
+				label: 'SvelteKit Full-Stack',
+				hint: 'logs in against the local SQLite database (session_id cookie)'
+			},
+			{
+				value: 'fastapi',
+				label: 'FastAPI Backend (BFF Proxy)',
+				hint: 'logs in through FastAPI (access_token / refresh_token cookies)'
+			}
+		]
+	});
+	if (p.isCancel(mode)) {
+		p.cancel('Patch cancelled.');
+		process.exit(0);
+	}
+	return mode;
+}
+
+export async function patch(latestVersion: string, args: string[] = []) {
+	const flags = parsePatchFlags(args);
 	const configPath = join(process.cwd(), '.sveltekitten.json');
 
 	if (!existsSync(configPath)) {
@@ -15,11 +66,24 @@ export async function patch(latestVersion: string) {
 		process.exit(1);
 	}
 
-	const config: ProjectConfig = JSON.parse(await readFile(configPath, 'utf-8'));
+	let config: ProjectConfig = JSON.parse(await readFile(configPath, 'utf-8'));
 	const { version: currentVersion, template } = config;
 
 	p.intro(`create-sveltekitten patch`);
-	p.log.info(`Project: ${template} @ ${currentVersion} → ${latestVersion}`);
+
+	if (flags.mode && template !== 'ssr') fail('--mode only applies to SSR projects.');
+	if (flags.mode && config.ssrMode && flags.mode !== config.ssrMode) {
+		fail(`This project's .sveltekitten.json already says ssrMode "${config.ssrMode}".`);
+	}
+	if (template === 'ssr' && !config.ssrMode) {
+		config = { ...config, ssrMode: await resolveSsrMode(flags.mode) };
+		await writeFile(configPath, JSON.stringify(config, null, '\t') + '\n');
+		p.log.info(`Saved ssrMode "${config.ssrMode}" to .sveltekitten.json.`);
+	}
+
+	p.log.info(
+		`Project: ${template}${config.ssrMode ? ` (${config.ssrMode})` : ''} @ ${currentVersion} → ${latestVersion}`
+	);
 
 	if (currentVersion === latestVersion) {
 		p.outro('Already up to date.');

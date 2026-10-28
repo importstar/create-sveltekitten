@@ -32,13 +32,13 @@ describe('scaffold with every flag and --yes', () => {
 	it.each([
 		{
 			args: ['--template', 'ssr', '--mode', 'fullstack'],
-			env: 'PUBLIC_APP_TITLE=demo\nDATABASE_URL=sqlite.db\nBACKEND_API_URL=http://localhost:9000\n',
+			env: 'PUBLIC_APP_TITLE=demo\nDATABASE_URL=sqlite.db\n',
 			config: { version, template: 'ssr', ssrMode: 'fullstack' },
 			fullstackOverlay: true
 		},
 		{
 			args: ['--template', 'ssr', '--mode', 'fastapi', '--backend-url', 'http://api.test:8000'],
-			env: 'PUBLIC_APP_TITLE=demo\nDATABASE_URL=sqlite.db\nBACKEND_API_URL=http://api.test:8000\n',
+			env: 'PUBLIC_APP_TITLE=demo\nBACKEND_API_URL=http://api.test:8000\n',
 			config: { version, template: 'ssr', ssrMode: 'fastapi' },
 			fullstackOverlay: false
 		},
@@ -70,6 +70,50 @@ describe('scaffold with every flag and --yes', () => {
 		const result = runCli(cwd, ['--name', 'demo', '--template', 'spa', '--yes']);
 		expect(result.status, result.output).toBe(0);
 		expect(read('demo/.env')).toBe('PUBLIC_APP_TITLE=demo\nPUBLIC_API_URL=http://localhost:9000\n');
+	});
+});
+
+const allDependencies = (pkg: Record<string, Record<string, string> | undefined>) => ({
+	...pkg.dependencies,
+	...pkg.devDependencies
+});
+
+// Each SSR mode ships only its own code and dependencies (issue #2, AC1 and AC2).
+describe.each([
+	{
+		mode: 'fullstack',
+		present: ['src/lib/server/db/index.ts', 'src/lib/server/auth/session.ts', 'drizzle.config.ts', 'src/lib/features/items/service.ts', 'pnpm-lock.yaml'],
+		absent: ['src/routes/api/proxy', 'src/lib/api/fastapi-client.ts', 'src/lib/hooks/fastapi.hook.ts', 'src/libs/api-specs', 'e2e/mock-api.js'],
+		dependencies: ['better-sqlite3', 'drizzle-orm'],
+		noDependencies: ['jsonwebtoken', '@types/jsonwebtoken', 'openapi-fetch', 'openapi-typescript'],
+		noScripts: /^openapi/
+	},
+	{
+		mode: 'fastapi',
+		present: ['src/routes/api/proxy/[...slug]/+server.ts', 'src/lib/api/fastapi-client.ts', 'src/libs/api-specs/fastapi.json', 'e2e/mock-api.js', 'pnpm-lock.yaml'],
+		absent: ['src/lib/server/db', 'src/lib/server/auth', 'drizzle.config.ts', 'src/lib/features/items/server.ts', 'src/lib/features/items/service.ts', 'src/routes/api/items', 'scripts/user-create.ts'],
+		dependencies: ['jsonwebtoken', 'openapi-fetch'],
+		noDependencies: ['better-sqlite3', '@types/better-sqlite3', 'drizzle-orm', 'drizzle-kit'],
+		noScripts: /^(db|user):/
+	}
+])('ssr $mode contains only its own mode', ({ mode, present, absent, dependencies, noDependencies, noScripts }) => {
+	it('files, dependencies and scripts', () => {
+		const result = runCli(cwd, ['--name', 'demo', '--template', 'ssr', '--mode', mode, '--yes']);
+		expect(result.status, result.output).toBe(0);
+
+		for (const file of present) expect(existsSync(join(cwd, 'demo', file)), file).toBe(true);
+		for (const file of absent) expect(existsSync(join(cwd, 'demo', file)), file).toBe(false);
+
+		const pkg = JSON.parse(read('demo/package.json'));
+		const deps = Object.keys(allDependencies(pkg));
+		for (const dep of dependencies) expect(deps).toContain(dep);
+		for (const dep of noDependencies) expect(deps).not.toContain(dep);
+		expect(Object.keys(pkg.scripts).filter((s) => noScripts.test(s))).toEqual([]);
+
+		// The lockfile must list exactly this mode's dependencies, or install --frozen-lockfile fails.
+		const importer = read('demo/pnpm-lock.yaml').split(/^packages:$/m)[0];
+		const locked = [...importer.matchAll(/^ {6}'?([^'\s]+?)'?:$/gm)].map((m) => m[1]);
+		expect(locked.sort()).toEqual(deps.sort());
 	});
 });
 

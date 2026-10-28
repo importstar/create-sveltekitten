@@ -15,6 +15,7 @@ Run the CLI locally:
 node dist/index.js            # scaffold (interactive)
 node dist/index.js --name demo --template ssr --mode fullstack --yes   # scaffold, no prompts
 node dist/index.js patch      # patch an existing project
+node dist/index.js patch --mode fullstack   # same, for an SSR project whose .sveltekitten.json has no ssrMode
 ```
 
 The `dist/` directory is committed — always rebuild before committing.
@@ -30,8 +31,9 @@ src/
     apply.ts        — applyCodemods(): the pure engine patch.ts and the tests share
     helpers.ts      — replaceFile / createFile / replaceText transform helpers
 templates/
-  ssr/              — SSR template
-  ssr-fullstack/    — files that replace their ssr/ counterpart when ssrMode is fullstack
+  ssr/              — SSR files shared by both modes (UI, login form, items UI, e2e/login + items tests)
+  ssr-fullstack/    — overlay for ssrMode fullstack: Drizzle/SQLite, session auth, items service, package.json + lockfile
+  ssr-fastapi/      — overlay for ssrMode fastapi (BFF): proxy, FastAPI client + spec, JWT cookies, package.json + lockfile
   spa/              — SPA template
 dist/               — compiled output (committed, enables pnpx github: usage)
 scripts/make-codemod-fixture.mjs — writes codemod fixture inputs from git history
@@ -42,19 +44,22 @@ test/               — vitest: CLI, codemod fixtures (test/fixtures/codemods/<t
 
 Every scaffolded project receives a `.sveltekitten.json`:
 ```json
-{ "version": "0.1.0", "template": "ssr" }
+{ "version": "1.0.0", "template": "ssr", "ssrMode": "fastapi" }
 ```
+
+SSR projects always record `ssrMode` (`fullstack` or `fastapi`); SPA projects have none. An SSR scaffold is `templates/ssr/` with `templates/ssr-<ssrMode>/` copied over it, so each project has only its own mode's code and dependencies. `patch` asks for the mode (or takes `--mode`) when an older SSR project has no `ssrMode`, and saves it.
 
 The version comes from `package.json` at scaffold time. The `patch` command uses it to select applicable codemods.
 
 ## Feature architecture convention (inside templates)
 
-Template features under `src/lib/features/<name>/` follow a layered pattern — `src/lib/features/items/` in each template is the canonical example, see `templates/ssr/agent-role.md` / `templates/spa/agent-role.md` for the full breakdown:
+Template features under `src/lib/features/<name>/` follow a layered pattern — `src/lib/features/items/` in each template is the canonical example, see `templates/ssr-fullstack/agent-role.md` / `templates/ssr-fastapi/agent-role.md` / `templates/spa/agent-role.md` for the full breakdown:
 
 - `schema.ts` (Zod) → `contract.ts` (interface: what any implementation of the feature's API must do) → `api.ts` (implements the contract) → `context.ts` (`createContext` for the contract; the root layout provides the real implementation) → `queries.ts` (TanStack Query hooks, depend on the contract via an optional parameter defaulting to the context value, not on `api.ts` directly)
 - SSR full-stack features additionally split `server.ts` (Drizzle repository, no business rules) from `service.ts` (use-case layer with authorization — e.g. ownership checks). `service.ts` declares the repository interface it needs and exports a `create<Feature>Service(repo)` factory; `server.ts` implements the interface, and `src/lib/server/services.ts` (composition root) wires them. Route handlers (`src/routes/api/<feature>/+server.ts`) call the service from `$lib/server/services`, never `server.ts` directly. `service.test.ts` tests the rules against an in-memory repository under `testing/`.
+- SSR FastAPI (BFF) features have **no business rules in SvelteKit**: no `server.ts`, `service.ts` or database. `api.ts` calls FastAPI through `fastapiClient` (via `/api/proxy`), `dto.ts` maps FastAPI response types to the UI types, and `contract.test.ts` also runs the contract against the real `api.ts` over a fake FastAPI `fetch` in `testing/`. Rules belong in the FastAPI backend.
 
-When this pattern changes, update it in three places together: the template files themselves, `templates/ssr/agent-role.md` / `templates/spa/agent-role.md`, and this section.
+When this pattern changes, update it in three places together: the template files themselves, the `agent-role.md` of each affected template (`templates/ssr-fullstack/`, `templates/ssr-fastapi/`, `templates/spa/`), and this section.
 
 ## Fixing a bug in a template file
 
@@ -62,7 +67,7 @@ Never change a template file without a matching codemod entry — existing proje
 
 You must always do all these steps — never skip any:
 
-1. **Edit** the file under `templates/ssr/` or `templates/spa/`. A file that exists in both `ssr/` and `ssr-fullstack/` must be fixed in the copy for the mode that has the bug; the codemod sets `ssrMode` to target only that mode.
+1. **Edit** the file where it lives: `templates/ssr/` (shared by both SSR modes), `templates/ssr-fullstack/` or `templates/ssr-fastapi/` (one mode), or `templates/spa/`. For a file in a mode overlay, the codemod sets `ssrMode` to target only that mode. A dependency change goes into each mode's `package.json`, and that mode's `pnpm-lock.yaml` is regenerated (scaffold the mode, `pnpm install && pnpm dedupe`, copy the lockfile back) so `pnpm install --frozen-lockfile` keeps working.
 2. **Add a codemod** — an entry in the `codemods` array in `src/codemods/index.ts`, **at the end**, so existing projects can receive the fix, plus its fixture test (see Testing)
 3. **Bump the version** in `package.json` (`npm version patch` / `minor` / `major`)
 4. `pnpm build && pnpm test && npm publish`
@@ -105,7 +110,7 @@ No version bump needed unless the change affects `patch` behavior.
 pnpm test   # tsc && vitest run; CI runs the same after checking dist/
 ```
 
-Tests run the built `dist/`, the code users run. CI (`.github/workflows/ci.yml`) runs `pnpm build`, fails when `git diff --exit-code dist` shows a change (src edited without rebuilding and committing `dist/`), then `pnpm test`.
+Tests run the built `dist/`, the code users run. CI (`.github/workflows/ci.yml`) runs `pnpm build`, fails when `git diff --exit-code dist` shows a change (src edited without rebuilding and committing `dist/`), then `pnpm test`. A second job scaffolds each SSR mode with the CLI flags and runs `pnpm install --frozen-lockfile`, `pnpm check` and `pnpm build` in it. Locally, `pnpm test:unit` and `pnpm test:e2e` in a fresh scaffold of the mode you changed cover the template itself.
 
 **Fixture test for a new codemod** (required: the suite fails for any codemod from 0.3.0 on without a fixture):
 

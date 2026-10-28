@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.0.0
+
+**Breaking change in template structure.** The SSR template is split by mode. A new SSR project has only the code and dependencies of the mode you pick:
+
+- **Full-stack** (`--mode fullstack`): SQLite + Drizzle, session auth, the items service. No `/api/proxy`, FastAPI client, OpenAPI spec or scripts, `jsonwebtoken` or `openapi-fetch`. Login checks the local database only. The home page health check calls a new `/api/health` route instead of FastAPI. `.env` no longer has `BACKEND_API_URL`.
+- **FastAPI BFF** (`--mode fastapi`): proxy, FastAPI client, OpenAPI spec and scripts. No database, `better-sqlite3`, Drizzle, `src/lib/server/auth`, or items `server.ts` / `service.ts`. Login calls FastAPI only. The `BACKEND_API_URL !== 'http://localhost:9000'` check is gone: with the default URL, login used to skip FastAPI and check an empty local database, so every login failed. A rejected login shows "Invalid username or password." and sets no cookie. The items example calls FastAPI's `/v1/items` through `fastapiClient` (added to the committed spec and to `e2e/mock-api.js`). The OpenAPI types are generated on `pnpm install`, so `pnpm check` passes on a fresh project. `.env` no longer has `DATABASE_URL`.
+- Each mode has its own `package.json` and `pnpm-lock.yaml`. The lockfiles are deduplicated, which removes a second copy of `zod` that made `pnpm check` fail in both modes.
+- Each mode has its own `AGENTS.md` and `agent-role.md`. The BFF one states the rule: no business rules in SvelteKit.
+- `.sveltekitten.json` of every SSR project records `ssrMode`. `pnpx create-sveltekitten patch` in an SSR project without it asks for the mode (or takes `--mode fullstack|fastapi`) and saves it.
+
+### Migrating a project created before 1.0.0
+
+`pnpx create-sveltekitten patch` updates, when unchanged from 0.3.24:
+
+- `src/routes/login/+page.server.ts`: FastAPI only in BFF projects, SQLite only in full-stack projects.
+- `e2e/login.test.ts`: a rejected login must leave no `session_id`, `access_token` or `refresh_token` cookie.
+
+It never deletes files, so your project keeps the other mode's code and dependencies. Everything keeps working as before. To remove them by hand, compare with a fresh scaffold of your mode (`pnpx create-sveltekitten --name tmp --template ssr --mode <mode> --yes`), then:
+
+- **BFF projects**: you can delete `src/lib/server/db/`, `src/lib/server/auth/`, `src/lib/server/services.ts`, `src/lib/server/http.ts` (+ test), `src/lib/utils/api-core.ts`, `drizzle.config.ts`, `src/routes/api/items/`, and in `src/lib/features/items/` the `server.ts`, `service.ts`, `service.test.ts` and `testing/in-memory-repository.ts`; remove `better-sqlite3`, `@types/better-sqlite3`, `drizzle-orm`, `drizzle-kit`, `tsx`, the `db:*` scripts and `DATABASE_URL`. Session code in `auth-guard.ts`, `logout`, `app.d.ts` and `(protected)/+layout.server.ts` must go with it; copy those files from the fresh scaffold. Your items data was in SQLite; the new items example expects `/v1/items` on FastAPI.
+- **Full-stack projects**: you can delete `src/routes/api/proxy/`, `src/lib/api/`, `src/lib/hooks/fastapi.hook.ts`, `src/lib/server/proxy/`, `src/libs/api-specs/`, `e2e/mock-api.js` and `e2e/proxy-refresh.test.ts`; remove `jsonwebtoken`, `@types/jsonwebtoken`, `openapi-fetch`, `openapi-typescript`, the `openapi*` scripts and `BACKEND_API_URL`. Copy `hooks.server.ts`, `app.d.ts`, `src/lib/utils/auth.ts`, `logout`, the `health` feature, `(protected)/home/+page.server.ts` and `src/routes/api/health/` from the fresh scaffold, since the old ones import the FastAPI client.
+
+Then run `pnpm install && pnpm check && pnpm build`.
+
 ## 0.3.24
 
 **Bug fix** for token refresh in SSR FastAPI (BFF) projects. When an access token expired, the `/api/proxy` route called `POST /v1/auth/refresh`. The FastAPI spec that ships with the template (`src/libs/api-specs/fastapi.json`) has no such endpoint, so a backend that matches it answered 404 or 405. The proxy then cleared the cookies and logged the user out about every 10 minutes.
