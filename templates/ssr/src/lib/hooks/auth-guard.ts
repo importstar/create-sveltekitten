@@ -29,7 +29,9 @@ export const handleAuthGuard: Handle = async ({ event, resolve }) => {
 		clearCookieTokens(cookies);
 	}
 
-	// 3. Route Guard for (protected) route group
+	// 3. Route Guard for (protected) route group. A UX guard only: the refresh token is decoded,
+	// not verified, because this app holds no signing secret. FastAPI verifies the token on every
+	// proxied request, so a forged cookie reaches page shells but no data.
 	if (isProtectedRoute(route.id)) {
 		const isAuthenticated = Boolean(
 			event.locals.user || (refreshToken && !isTokenExpired(refreshToken))

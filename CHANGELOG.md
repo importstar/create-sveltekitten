@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.23
+
+**Security and bug fix** in the SSR `/api/proxy` route. It matters most in FastAPI (BFF) projects, where all API traffic goes through the proxy.
+
+- **Cookies no longer reach the backend.** The proxy forwarded the browser's `cookie` header, so the backend saw `access_token`, `refresh_token` and `session_id`. SvelteKit's `event.fetch` also re-attaches the app's cookies when the backend is on the same host or a subdomain, such as `api.example.com`. The proxy now strips the header and calls the backend with the global `fetch`. The backend gets only `Authorization: Bearer`.
+- **Retries after a token refresh keep the request body.** When an access token had expired, the proxy refreshed it and retried with a request body it had already consumed. Every POST, PUT and PATCH failed with 502. The body is now buffered once and sent again on the retry.
+- **One refresh call for concurrent 401s.** Requests that get a 401 at the same time with the same refresh token now share one `/v1/auth/refresh` call. A request that still carries the old token just after a rotation reuses the new pair for 10 seconds instead of sending a revoked token. The logic is in the new `src/lib/server/proxy/refresh.ts`.
+- **Proxy paths that could escape the backend base path return 400.** This covers slugs with a `..` or `.` segment, such as `v1/..%2F..%2Fadmin`, and slugs that are absolute URLs. This only matters when `BACKEND_API_URL` has a path prefix.
+- **The FastAPI-mode auth guard now says what it is.** A comment explains that it is a UX guard only. FastAPI verifies every proxied request.
+
+Update existing projects with:
+
+```bash
+pnpx create-sveltekitten patch
+```
+
+The patch replaces the proxy route only when it is unchanged from 0.3.22. If you edited it, port the changes by hand from the new template.
+
 ## 0.3.22
 
 `pnpm test:e2e` now runs `playwright install chromium` first. A fresh machine, or a Playwright upgrade, used to fail at browser launch until someone ran that command by hand, and neither template said so. When the browser is already installed the step finishes in about a second and needs no network. Applies to SSR and SPA projects.

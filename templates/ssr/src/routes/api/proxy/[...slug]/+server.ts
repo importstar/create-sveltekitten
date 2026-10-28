@@ -2,15 +2,30 @@ import { env } from '$env/dynamic/private';
 import { logger } from '$lib/logger';
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { clearCookieTokens, setAuthTokens } from '$lib/utils/auth';
+import { refreshTokens } from '$lib/server/proxy/refresh';
 
-const handler: RequestHandler = async ({ request, cookies, params, fetch, url }) => {
+// Rejects slugs that could leave the backend base path once the URL is resolved, e.g.
+// `v1/../admin` when BACKEND_API_URL carries a path prefix.
+function isSafeProxyPath(slug: string): boolean {
+	if (URL.canParse(slug) || slug.includes('\\')) return false;
+	return !slug.split('/').some((segment) => segment === '..' || segment === '.');
+}
+
+// The global fetch, not event.fetch: SvelteKit's fetch attaches this app's cookies to requests for
+// the same host or its subdomains (e.g. api.example.com), which would hand them to the backend.
+const backendFetch: typeof fetch = (input, init) => fetch(input, init);
+
+const handler: RequestHandler = async ({ request, cookies, params, url }) => {
 	if (!env.BACKEND_API_URL) {
 		logger.error('BACKEND_API_URL environment variable is not set.');
 		throw new Error('BACKEND_API_URL environment variable is not set.');
 	}
 
 	const path = params.slug;
+	if (!isSafeProxyPath(path)) {
+		throw error(400, 'Invalid proxy path');
+	}
+
 	const accessToken = cookies.get('access_token');
 	const backendBase = env.BACKEND_API_URL.replace(/\/$/, '');
 	const API_ENDPOINT = `${backendBase}/${path}${url.search}`;
@@ -38,11 +53,17 @@ const handler: RequestHandler = async ({ request, cookies, params, fetch, url })
 		h.delete('connection');
 		h.delete('keep-alive');
 		h.delete('proxy-authorization');
+		// The browser's cookies belong to this app (session, tokens), not to the backend
+		h.delete('cookie');
 		h.delete('transfer-encoding');
 		// Optionally prevent backend from sending compressed responses
 		h.delete('accept-encoding');
 		return h;
 	};
+
+	// Buffered once so a retry after token refresh can send the same body again
+	const body =
+		request.method === 'GET' || request.method === 'HEAD' ? undefined : await request.arrayBuffer();
 
 	const makeApiRequest = (token?: string) => {
 		const headers = sanitizeRequestHeaders(new Headers(request.headers));
@@ -53,39 +74,7 @@ const handler: RequestHandler = async ({ request, cookies, params, fetch, url })
 			headers.delete('authorization');
 		}
 
-		const fetchOptions: RequestInit & { duplex?: 'half' } = {
-			method: request.method,
-			headers
-		};
-
-		if (request.method !== 'GET' && request.method !== 'HEAD' && request.body) {
-			fetchOptions.duplex = 'half';
-			fetchOptions.body = request.body;
-		}
-
-		return fetch(API_ENDPOINT, fetchOptions);
-	};
-
-	// Small helper to attempt refreshing the access token
-	const tryRefresh = async (refreshToken?: string) => {
-		if (!refreshToken) return undefined;
-		const resp = await fetch(`${backendBase}/v1/auth/refresh`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${refreshToken}`
-			}
-		});
-
-		if (!resp.ok) {
-			logger.warn('[API Proxy] Refresh token invalid/expired, clearing cookies');
-			clearCookieTokens(cookies);
-			return undefined;
-		}
-
-		const data = await resp.json();
-		setAuthTokens(cookies, data.access_token, data.refresh_token);
-		return data.access_token as string | undefined;
+		return backendFetch(API_ENDPOINT, { method: request.method, headers, body });
 	};
 
 	try {
@@ -93,14 +82,7 @@ const handler: RequestHandler = async ({ request, cookies, params, fetch, url })
 
 		if (response.status === 401 && accessToken) {
 			logger.warn(`[API Proxy] Unauthorized request, trying to refresh access token.`);
-			const refreshToken = cookies.get('refresh_token');
-			if (!refreshToken) {
-				logger.warn(`[API Proxy] No Refresh Token`);
-				clearCookieTokens(cookies);
-				return createProxyResponse(response);
-			}
-
-			const newAccess = await tryRefresh(refreshToken);
+			const newAccess = await refreshTokens(cookies, backendBase, backendFetch);
 			if (newAccess) {
 				response = await makeApiRequest(newAccess);
 			}
