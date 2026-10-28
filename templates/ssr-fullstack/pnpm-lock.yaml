@@ -11,9 +11,6 @@ importers:
       '@tanstack/svelte-query':
         specifier: ^6.3.0
         version: 6.3.0(svelte@5.57.1(@typescript-eslint/types@8.70.1))
-      '@tanstack/svelte-query-devtools':
-        specifier: ^6.3.0
-        version: 6.3.0(@tanstack/svelte-query@6.3.0(svelte@5.57.1(@typescript-eslint/types@8.70.1)))(csstype@3.2.3)(svelte@5.57.1(@typescript-eslint/types@8.70.1))
       better-sqlite3:
         specifier: ^13.0.3
         version: 13.0.3
@@ -51,6 +48,9 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+      '@tanstack/svelte-query-devtools':
+        specifier: ^6.3.0
+        version: 6.3.0(@tanstack/svelte-query@6.3.0(svelte@5.57.1(@typescript-eslint/types@8.70.1)))(csstype@3.2.3)(svelte@5.57.1(@typescript-eslint/types@8.70.1))
       '@types/better-sqlite3':
         specifier: ^9.6.0
         version: 9.6.0

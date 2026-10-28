@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.1.3
+
+`@tanstack/svelte-query-devtools` moved from `dependencies` to `devDependencies` in every template and mode, and `openapi-typescript` with it in SPA and SSR FastAPI (BFF) projects (full-stack projects do not use it). `openapi-typescript` only generates types, and the devtools component is bundled into the build, so `pnpm install --prod` no longer installs either. The SSR server still starts from a production-only install.
+
+Update existing projects with:
+
+```bash
+pnpx create-sveltekitten patch
+pnpm install
+```
+
+The patch moves the entries in `package.json` and keeps the versions you have. It only rewrites a tab-indented `package.json` (as the template has it); for any other formatting it leaves the file alone and asks you to move them by hand. Run `pnpm install` afterwards so `pnpm-lock.yaml` matches; until then `pnpm install --frozen-lockfile` fails.
+
 ## 1.1.2
 
 **Security fix. After this patch every signed-in user has to log in again.**
