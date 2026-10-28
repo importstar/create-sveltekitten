@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.1
+
+New items in SSR full-stack projects get a UUID v4 id from `crypto.randomUUID()`. `insertItem` used `Math.random().toString(36)`, a 7-character id that is predictable and can collide. Existing rows keep their ids.
+
+Update existing projects with:
+
+```bash
+pnpx create-sveltekitten patch
+```
+
+The patch changes the id line in `src/lib/features/items/server.ts` only if it is unchanged from 1.1.0.
+
 ## 1.1.0
 
 **New: `scripts/check.sh`** in every template and mode, the one command that says whether a change is ready to merge:
