@@ -25,5 +25,13 @@ test.describe('Login', () => {
 		await page.getByLabel('Password').fill(INVALID.password);
 		await page.getByRole('button', { name: 'Login' }).click();
 		await expect(page.getByText('Login Failed', { exact: true })).toBeVisible();
+		await expect(page.getByText('Invalid username or password.')).toBeVisible();
+
+		// No session of any kind: no cookie was set, and protected pages still send you to /login.
+		const authCookies = ['session_id', 'access_token', 'refresh_token'];
+		const cookies = await page.context().cookies();
+		expect(cookies.filter((c) => authCookies.includes(c.name))).toEqual([]);
+		await page.goto('/home');
+		await expect(page).toHaveURL('/login');
 	});
 });

@@ -70,13 +70,6 @@ async function applyReplacements(targetDir, replacements) {
         }
     }
 }
-/** The overlay copies files only, so the fullstack-only package.json script is added here. */
-async function addFullstackPackageEntries(targetDir) {
-    const pkgPath = join(targetDir, 'package.json');
-    const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
-    pkg.scripts['user:create'] = 'tsx scripts/user-create.ts';
-    await writeFile(pkgPath, JSON.stringify(pkg, null, '\t') + '\n');
-}
 const TEMPLATES = ['ssr', 'spa'];
 const SSR_MODES = ['fullstack', 'fastapi'];
 const DEFAULT_BACKEND_URL = 'http://localhost:9000';
@@ -154,7 +147,7 @@ async function main(flags) {
                 {
                     value: 'ssr',
                     label: 'SSR',
-                    hint: `v${version} · adapter-node · Drizzle SQLite / FastAPI BFF · server auth`
+                    hint: `v${version} · adapter-node · full-stack (Drizzle SQLite) or FastAPI BFF`
                 },
                 {
                     value: 'spa',
@@ -239,11 +232,12 @@ async function main(flags) {
     spinner.start('Scaffolding project...');
     try {
         await mkdir(targetDir, { recursive: true });
+        // SSR is the shared templates/ssr plus the chosen mode's overlay, templates/ssr-<mode>,
+        // which adds that mode's code, package.json and lockfile.
         const templateDir = join(TEMPLATES_DIR, template);
         await cp(templateDir, targetDir, { recursive: true, force: true });
-        if (template === 'ssr' && ssrMode === 'fullstack') {
-            await cp(join(TEMPLATES_DIR, 'ssr-fullstack'), targetDir, { recursive: true, force: true });
-            await addFullstackPackageEntries(targetDir);
+        if (template === 'ssr') {
+            await cp(join(TEMPLATES_DIR, `ssr-${ssrMode}`), targetDir, { recursive: true, force: true });
         }
         await materializeGitignore(targetDir);
         const replacements = {
@@ -251,9 +245,11 @@ async function main(flags) {
             '{{BACKEND_URL}}': backendUrl
         };
         await applyReplacements(targetDir, replacements);
-        const envLines = template === 'ssr'
-            ? `PUBLIC_APP_TITLE=${projectName}\nDATABASE_URL=sqlite.db\nBACKEND_API_URL=${backendUrl}\n`
-            : `PUBLIC_APP_TITLE=${projectName}\nPUBLIC_API_URL=${backendUrl}\n`;
+        const envLines = template === 'spa'
+            ? `PUBLIC_APP_TITLE=${projectName}\nPUBLIC_API_URL=${backendUrl}\n`
+            : ssrMode === 'fullstack'
+                ? `PUBLIC_APP_TITLE=${projectName}\nDATABASE_URL=sqlite.db\n`
+                : `PUBLIC_APP_TITLE=${projectName}\nBACKEND_API_URL=${backendUrl}\n`;
         await writeFile(join(targetDir, '.env'), envLines);
         await writeFile(join(targetDir, '.sveltekitten.json'), JSON.stringify({
             version: await getVersion(),
@@ -298,7 +294,7 @@ async function main(flags) {
 const command = process.argv[2];
 if (command === 'patch') {
     getVersion()
-        .then((v) => patch(v))
+        .then((v) => patch(v, process.argv.slice(3)))
         .catch((err) => {
         console.error(err);
         process.exit(1);

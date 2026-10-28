@@ -4,7 +4,6 @@ import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { loginSchema } from '$lib/features/login/schema';
 import { logger } from '$lib/logger';
-import { setAuthTokens } from '$lib/utils/auth';
 import { db } from '$lib/server/db';
 import { authenticate } from '$lib/server/auth/users';
 import { createSession, generateSessionToken, setSessionCookie } from '$lib/server/auth/session';
@@ -20,35 +19,11 @@ export const load = (async ({ locals }) => {
 }) satisfies PageServerLoad;
 
 export const actions: Actions = {
-	default: async ({ request, locals, cookies }) => {
-		const { fastapiClient } = locals;
+	default: async ({ request, cookies }) => {
 		const form = await superValidate(request, zod4(loginSchema));
 
 		if (!form.valid) {
 			return { form };
-		}
-
-		// Try FastAPI first if BACKEND_API_URL is configured and not default placeholder
-		const backendUrl = process.env.BACKEND_API_URL;
-		if (backendUrl && backendUrl !== 'http://localhost:9000') {
-			try {
-				const result = await fastapiClient.POST('/v1/auth/login', {
-					body: {
-						username: form.data.username,
-						password: form.data.password,
-						strategy: 'jwt'
-					}
-				});
-				logger.inspect('FastAPI Login Result', result);
-
-				if (result.data) {
-					setAuthTokens(cookies, result.data.access_token, result.data.refresh_token);
-					throw redirect(303, '/home');
-				}
-			} catch (err) {
-				if ((err as any)?.status === 303) throw err;
-				logger.inspect('FastAPI login failed, checking local database', err);
-			}
 		}
 
 		try {
