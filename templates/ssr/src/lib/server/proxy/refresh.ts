@@ -2,10 +2,12 @@ import type { Cookies } from '@sveltejs/kit';
 import { logger } from '$lib/logger';
 import { clearCookieTokens, setAuthTokens } from '$lib/utils/auth';
 
+// GetAccessTokenResponse in fastapi.json has no refresh_token, so the caller's cookie is kept;
+// a backend that does rotate it may still return one.
 type TokenPair = { access_token: string; refresh_token?: string | null };
 
 // A successful refresh stays shared for a short while after it settles: a request that read the
-// old refresh token just before the rotation reuses the new pair instead of presenting a token
+// old refresh token just before a rotation reuses the new tokens instead of presenting a token
 // the backend has already revoked.
 const REUSE_MS = 10_000;
 const refreshes = new Map<string, Promise<TokenPair | null>>();
@@ -18,10 +20,13 @@ function sharedRefresh(
 	const existing = refreshes.get(refreshToken);
 	if (existing) return existing;
 
-	const pending = fetchFn(`${backendBase}/v1/auth/refresh`, {
-		method: 'POST',
+	// GET /v1/auth/refresh_token reads the token from the refresh_token cookie and also declares
+	// HTTPBearer security (fastapi.json), so it gets both. This is the only backend request the
+	// proxy sends a cookie on, and it is built here, never copied from the browser.
+	const pending = fetchFn(`${backendBase}/v1/auth/refresh_token`, {
+		method: 'GET',
 		headers: {
-			'Content-Type': 'application/json',
+			Cookie: `refresh_token=${refreshToken}`,
 			Authorization: `Bearer ${refreshToken}`
 		}
 	}).then(async (resp) => (resp.ok ? ((await resp.json()) as TokenPair) : null));
