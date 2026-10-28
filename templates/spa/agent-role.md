@@ -58,7 +58,8 @@ The contract is more than the type: e.g. `toggleItem` must resolve with the full
 ## Key Constraints
 
 - **SPA mode — no server-side load functions** — all data fetching is client-side via TanStack Query
-- **Auth is client-side** — `authStore` holds the access token in memory; refresh token is in an httpOnly cookie
+- **Auth is client-side** — `authStore` saves its state, access token included, to `localStorage` (`auth_state`) so it survives a reload; refresh token is in an httpOnly cookie
+- **XSS can steal the access token** — any script injected into the page can read `localStorage`, so never render untrusted HTML with `{@html}`.
 - **Protected pages must live inside `(protected)/`** — the layout guard calls `requireAuth()` automatically
 - **Svelte 5 runes only** — no legacy Svelte 4 syntax. See the table below.
 - **Run `svelte-autofixer` before finalizing any `.svelte` file**:

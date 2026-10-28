@@ -20,7 +20,7 @@ export async function getItemById(id: string): Promise<DbItem | undefined> {
 }
 
 export async function insertItem(input: CreateItemInput, userId: string): Promise<DbItem> {
-	const id = Math.random().toString(36).substring(2, 9);
+	const id = crypto.randomUUID();
 	const newItem = {
 		id,
 		userId,

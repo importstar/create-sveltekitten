@@ -1,5 +1,60 @@
 # Changelog
 
+## 1.1.4
+
+Docs fix for SPA projects. `AGENTS.md` and `agent-role.md` said `authStore` keeps the access token in memory. It saves its whole state, access token included, to `localStorage` (`auth_state`) so a reload keeps you signed in. Both files now say so and add one line on the risk: any injected script can read the token, so never render untrusted HTML with `{@html}`. Nothing about how auth works changed.
+
+Update existing projects with:
+
+```bash
+pnpx create-sveltekitten patch
+```
+
+The patch rewrites the auth line in each file only if it is unchanged from 1.1.3.
+
+## 1.1.3
+
+`@tanstack/svelte-query-devtools` moved from `dependencies` to `devDependencies` in every template and mode, and `openapi-typescript` with it in SPA and SSR FastAPI (BFF) projects (full-stack projects do not use it). `openapi-typescript` only generates types, and the devtools component is bundled into the build, so `pnpm install --prod` no longer installs either. The SSR server still starts from a production-only install.
+
+Update existing projects with:
+
+```bash
+pnpx create-sveltekitten patch
+pnpm install
+```
+
+The patch moves the entries in `package.json` and keeps the versions you have. It only rewrites a tab-indented `package.json` (as the template has it); for any other formatting it leaves the file alone and asks you to move them by hand. Run `pnpm install` afterwards so `pnpm-lock.yaml` matches; until then `pnpm install --frozen-lockfile` fails.
+
+## 1.1.2
+
+**Security fix. After this patch every signed-in user has to log in again.**
+
+SSR full-stack projects stored the session token from the `session_id` cookie as the `id` of its row in the `sessions` table. Anyone who could read the database (a backup, a copied `sqlite.db`, a SQL injection elsewhere) could use those ids as cookies and sign in as any user. The table now stores `sha256(token)`. The cookie still carries the raw token. `createSession`, `validateSessionToken` and `invalidateSession` still take the raw token and hash it inside, using the new `hashSessionToken(token)` in `src/lib/server/auth/session.ts`.
+
+Sessions created before the patch hold the raw token, so they no longer match. `validateSessionToken` returns no session for them, the auth guard clears the cookie, and the user is sent to `/login`. Nothing fails with a 500. The old rows stay in the table and are never matched again; delete them with `DELETE FROM sessions;` if you want them gone.
+
+A new `src/lib/server/auth/session.test.ts` covers storing, validating and invalidating hashed sessions, and rejecting an old unhashed one.
+
+Update existing projects with:
+
+```bash
+pnpx create-sveltekitten patch
+```
+
+The patch replaces `src/lib/server/auth/session.ts` only if it is unchanged from 1.1.1. If you edited it, hash the token with `sha256` wherever it is written to or looked up in `sessions.id`.
+
+## 1.1.1
+
+New items in SSR full-stack projects get a UUID v4 id from `crypto.randomUUID()`. `insertItem` used `Math.random().toString(36)`, a 7-character id that is predictable and can collide. Existing rows keep their ids.
+
+Update existing projects with:
+
+```bash
+pnpx create-sveltekitten patch
+```
+
+The patch changes the id line in `src/lib/features/items/server.ts` only if it is unchanged from 1.1.0.
+
 ## 1.1.0
 
 **New: `scripts/check.sh`** in every template and mode, the one command that says whether a change is ready to merge:

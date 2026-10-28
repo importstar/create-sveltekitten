@@ -2,7 +2,7 @@
 import * as p from '@clack/prompts';
 import { cp, mkdir, readFile, writeFile, readdir, rename, unlink } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, styleText } from 'node:util';
 import { patch } from './patch.js';
@@ -48,6 +48,8 @@ async function materializeGitignore(targetDir) {
         await rename(underscore, dot);
     }
 }
+// OpenAPI specs are fetched from the backend verbatim; a `{{...}}` inside one is the API's data.
+const NO_REPLACEMENT_DIRS = ['src/libs/api-specs/'];
 async function applyReplacements(targetDir, replacements) {
     const textExts = new Set([
         '.ts', '.svelte', '.js', '.json', '.css', '.html', '.md', '.env',
@@ -55,7 +57,9 @@ async function applyReplacements(targetDir, replacements) {
     ]);
     const files = await walkDir(targetDir);
     for (const file of files) {
-        const ext = '.' + file.split('.').slice(1).join('.') || file;
+        const rel = relative(targetDir, file).split(sep).join('/');
+        if (NO_REPLACEMENT_DIRS.some((dir) => rel.startsWith(dir)))
+            continue;
         const basename = file.split('/').pop() ?? '';
         const isText = textExts.has('.' + (file.split('.').pop() ?? '')) ||
             basename.startsWith('.') ||
