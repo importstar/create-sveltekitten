@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.1
+
+**Fix: `src/instrumentation.server.ts` reads `OTEL_*` from `process.env`.** That file runs before `Server.init()` populates `$app/env`, so imports from `$app/env/private` were `undefined` and `.replace` could throw (sveltejs/kit#14286). The vars stay declared in `src/env.ts`; only instrumentation switches to `process.env`.
+
+```bash
+pnpx create-sveltekitten patch
+```
+
 ## 2.1.0
 
 **Structured server logs tied to OpenTelemetry tracing** (issue #16), in both SSR modes. SPA projects have no server, so they get no logger; their `agent-role.md` now says so.

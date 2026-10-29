@@ -2,18 +2,21 @@
 // vite.config.ts turns on SvelteKit's spans). Spans always get real trace/span ids, so log lines
 // and `errorId` correlate even without a backend; they are only exported when
 // OTEL_EXPORTER_OTLP_ENDPOINT is set. Without it nothing is sent anywhere.
+//
+// Read from process.env — this file runs before Server.init() populates $app/env, so imports from
+// $app/env/private would be undefined (sveltejs/kit#14286). Vars stay declared in src/env.ts.
 import { context, propagation, trace } from '@opentelemetry/api';
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
 import { W3CTraceContextPropagator } from '@opentelemetry/core';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { BatchSpanProcessor, TracerProvider } from '@opentelemetry/sdk-trace';
-import { OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_SERVICE_NAME } from '$app/env/private';
 
-const endpoint = OTEL_EXPORTER_OTLP_ENDPOINT.replace(/\/$/, '');
+const endpoint = (process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? '').replace(/\/$/, '');
+const serviceName = process.env.OTEL_SERVICE_NAME || 'sveltekitten';
 
 const provider = new TracerProvider({
-	resource: resourceFromAttributes({ 'service.name': OTEL_SERVICE_NAME }),
+	resource: resourceFromAttributes({ 'service.name': serviceName }),
 	spanProcessors: endpoint
 		? [
 				new BatchSpanProcessor({
