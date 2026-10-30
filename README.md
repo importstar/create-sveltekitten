@@ -32,6 +32,7 @@ Pass any of these flags to skip its prompt; the CLI asks only for what is missin
 | `--name <name>` | project folder and `package.json` name |
 | `--template <t>` | `ssr` or `spa` |
 | `--mode <m>` | `fullstack` or `openapi` (SSR only). `fastapi` is rejected. |
+| `--pm <pm>` | `bun` or `pnpm`. Overrides detection. `--yes` without `--pm` uses bun. |
 | `--backend-url <url>` | backend base URL for SPA and SSR `openapi`, default `http://localhost:9000` |
 | `--yes` | never prompt: `--name`, `--template` and (for SSR) `--mode` are required, and an existing folder is an error instead of an overwrite |
 

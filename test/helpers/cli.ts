@@ -18,7 +18,7 @@ export function runCli(cwd: string, args: string[], timeout = 20_000) {
 		encoding: 'utf-8',
 		stdio: ['ignore', 'pipe', 'pipe'],
 		timeout,
-		env: { ...process.env, NO_COLOR: '1', CI: '1' }
+		env: { ...process.env, NO_COLOR: '1', CI: '1', npm_config_user_agent: '' }
 	});
 	return {
 		status: result.status,

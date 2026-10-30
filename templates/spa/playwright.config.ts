@@ -24,7 +24,7 @@ export default defineConfig({
 			timeout: 15_000
 		},
 		{
-			command: 'pnpm preview',
+			command: 'vite preview',
 			url: 'http://localhost:4173',
 			reuseExistingServer: !process.env.CI,
 			timeout: 60_000

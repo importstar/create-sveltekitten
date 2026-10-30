@@ -10,17 +10,17 @@
 		"dev": "vite dev --host 0.0.0.0",
 		"build": "vite build",
 		"preview": "vite preview",
-		"prepare": "svelte-kit sync && pnpm openapi:generate || echo ''",
+		"prepare": "svelte-kit sync && openapi-typescript src/libs/api-specs/openapi.json -o src/lib/api/paths/openapi.d.ts || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"test:unit": "vitest run",
-		"test:e2e": "playwright install chromium && pnpm build && playwright test",
+		"test:e2e": "playwright install chromium && vite build && playwright test",
 		"openapi": "openapi-typescript",
 		"openapi:fetch": "mkdir -p src/libs/api-specs && curl -f http://localhost:9000/openapi.json -o src/libs/api-specs/openapi.json",
 		"openapi:generate": "openapi-typescript src/libs/api-specs/openapi.json -o src/lib/api/paths/openapi.d.ts",
-		"openapi:update": "pnpm openapi:fetch && pnpm openapi:generate"
+		"openapi:update": "mkdir -p src/libs/api-specs && curl -f http://localhost:9000/openapi.json -o src/libs/api-specs/openapi.json && openapi-typescript src/libs/api-specs/openapi.json -o src/lib/api/paths/openapi.d.ts"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.1.1",

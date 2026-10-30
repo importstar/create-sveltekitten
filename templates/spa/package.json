@@ -20,7 +20,7 @@
 		"openapi": "openapi-typescript",
 		"openapi:fetch": "mkdir -p src/libs/api-specs && curl -f http://localhost:9000/openapi.json -o src/libs/api-specs/openapi.json",
 		"openapi:generate": "openapi-typescript src/libs/api-specs/openapi.json -o src/lib/api/openapi.d.ts",
-		"openapi:update": "pnpm openapi:fetch && pnpm openapi:generate"
+		"openapi:update": "mkdir -p src/libs/api-specs && curl -f http://localhost:9000/openapi.json -o src/libs/api-specs/openapi.json && openapi-typescript src/libs/api-specs/openapi.json -o src/lib/api/openapi.d.ts"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.63.0",

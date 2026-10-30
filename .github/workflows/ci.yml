@@ -22,8 +22,9 @@ jobs:
         run: git diff --exit-code dist && test -z "$(git ls-files --others --exclude-standard dist)"
       - run: pnpm test
 
-  # A fresh project of every template and mode must install from its own lockfile, pass its
-  # own scripts/check.sh (lint, OpenAPI drift in openapi, check, unit tests) and build.
+  # A fresh project of every template and mode, with bun and with pnpm, must install from
+  # its own lockfile, pass its own scripts/check.sh and build. The CLI job above stays on pnpm.
+  # pnpm cells pass --pm pnpm: `node --yes` has no pnpm user agent, so it would pick bun.
   scaffold:
     runs-on: ubuntu-latest
     strategy:
@@ -32,10 +33,22 @@ jobs:
         include:
           - variant: ssr-fullstack
             flags: --template ssr --mode fullstack
+            pm: pnpm
+          - variant: ssr-fullstack
+            flags: --template ssr --mode fullstack
+            pm: bun
           - variant: ssr-openapi
             flags: --template ssr --mode openapi
+            pm: pnpm
+          - variant: ssr-openapi
+            flags: --template ssr --mode openapi
+            pm: bun
           - variant: spa
             flags: --template spa
+            pm: pnpm
+          - variant: spa
+            flags: --template spa
+            pm: bun
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -46,16 +59,24 @@ jobs:
           cache-dependency-path: |
             pnpm-lock.yaml
             templates/${{ matrix.variant }}/pnpm-lock.yaml
+      - uses: oven-sh/setup-bun@v2
+        if: matrix.pm == 'bun'
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - name: Scaffold ${{ matrix.variant }}
+      - name: Scaffold ${{ matrix.variant }} (${{ matrix.pm }})
         working-directory: ${{ runner.temp }}
-        run: node "$GITHUB_WORKSPACE/dist/index.js" --name app ${{ matrix.flags }} --yes
+        run: node "$GITHUB_WORKSPACE/dist/index.js" --name app ${{ matrix.flags }} --pm ${{ matrix.pm }} --yes
       - name: pnpm install --frozen-lockfile
+        if: matrix.pm == 'pnpm'
         working-directory: ${{ runner.temp }}/app
         run: pnpm install --frozen-lockfile
+      - name: bun install --frozen-lockfile
+        if: matrix.pm == 'bun'
+        working-directory: ${{ runner.temp }}/app
+        run: bun install --frozen-lockfile
       - name: bash scripts/check.sh
         working-directory: ${{ runner.temp }}/app
         run: bash scripts/check.sh
-      - run: pnpm build
+      - name: build
         working-directory: ${{ runner.temp }}/app
+        run: ${{ matrix.pm == 'bun' && 'bun run build' || 'pnpm build' }}

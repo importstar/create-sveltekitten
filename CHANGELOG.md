@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.3.0
+
+**New projects can use bun or pnpm.** `--pm bun|pnpm` wins. Otherwise the CLI reads `npm_config_user_agent`. `--yes` with no signal selects bun. The choice is stored as `packageManager` in `.sveltekitten.json`. A bun scaffold rewrites the word `pnpm` in project text (not lockfiles, `scripts/check.sh`, or `src/libs/api-specs/`) and drops `pnpm-lock.yaml`. A pnpm scaffold drops `bun.lock`.
+
+`package.json` scripts call `vite`, `openapi-typescript`, and `playwright` directly. `scripts/check.sh` runs lint, check, and unit tests through the recorded package manager (pnpm when the field is missing). The OpenAPI drift step calls `openapi-typescript` itself.
+
+Existing projects stay on pnpm. `patch` writes `"packageManager": "pnpm"` when the field is missing and adds `bun.lock` so `bun install --frozen-lockfile` can run later without switching the project over.
+
+```bash
+pnpx create-sveltekitten patch
+```
+
 ## 2.2.0
 
 **The SSR BFF mode is `openapi`.** `--mode fastapi` is rejected on scaffold and on patch. A project whose `.sveltekitten.json` still says `"ssrMode": "fastapi"` is left unchanged: set it to `"openapi"` and run `patch` again. After that, codemods tagged `fastapi` and `openapi` both apply.

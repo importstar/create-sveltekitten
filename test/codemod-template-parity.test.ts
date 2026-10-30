@@ -25,7 +25,13 @@ const KNOWN_DIFFERENCES: Record<string, string> = {
 	'1.1.0/ssr-fastapi/agent-role.md':
 		'no commit has version 1.0.1, so the input is the 1.0.0 file without the 1.0.1 Prettier formatting; chain-1.0.0-1.1.0 gets this file right',
 	'1.1.0/ssr-fullstack/agent-role.md':
-		'no commit has version 1.0.1, so the input is the 1.0.0 file without the 1.0.1 Prettier formatting; chain-1.0.0-1.1.0 gets this file right'
+		'no commit has version 1.0.1, so the input is the 1.0.0 file without the 1.0.1 Prettier formatting; chain-1.0.0-1.1.0 gets this file right',
+	'2.3.0/spa/.sveltekitten.json':
+		'the codemod records packageManager pnpm; .sveltekitten.json is written by the CLI, so the template has no reference copy',
+	'2.3.0/ssr-fullstack/.sveltekitten.json':
+		'the codemod records packageManager pnpm; .sveltekitten.json is written by the CLI, so the template has no reference copy',
+	'2.3.0/ssr-openapi/.sveltekitten.json':
+		'the codemod records packageManager pnpm; .sveltekitten.json is written by the CLI, so the template has no reference copy'
 };
 
 const FIXTURES = fileURLToPath(new URL('./fixtures/codemods/', import.meta.url));

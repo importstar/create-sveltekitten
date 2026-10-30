@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Run before every merge: lint, OpenAPI types vs spec, type check, unit tests.
-# Stops at the first failing step.
+# Stops at the first failing step. lint, check and test:unit use the package manager in
+# .sveltekitten.json (pnpm if unset). The OpenAPI step calls openapi-typescript directly.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -26,7 +27,7 @@ openapi_types_match_spec() {
 	else
 		: >"$saved"
 	fi
-	if ! pnpm -s openapi:generate >/dev/null; then
+	if ! openapi-typescript src/libs/api-specs/openapi.json -o "$TYPES" >/dev/null; then
 		echo "Could not generate types from src/libs/api-specs/openapi.json." >&2
 		rm -f "$saved"
 		return 1
@@ -34,7 +35,7 @@ openapi_types_match_spec() {
 	local status=0
 	if ! cmp -s "$saved" "$TYPES"; then
 		echo "$TYPES does not match src/libs/api-specs/openapi.json." >&2
-		echo "Run: pnpm openapi:generate" >&2
+		echo "Run: openapi-typescript src/libs/api-specs/openapi.json -o $TYPES" >&2
 		status=1
 	fi
 	if [ -s "$saved" ]; then
@@ -46,10 +47,18 @@ openapi_types_match_spec() {
 	return $status
 }
 
-step lint pnpm lint
+PM=pnpm
+if [ -f .sveltekitten.json ]; then
+	recorded=$(sed -n 's/.*"packageManager"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .sveltekitten.json | head -n 1)
+	case "$recorded" in
+		bun|pnpm) PM=$recorded ;;
+	esac
+fi
+
+step lint "$PM" run lint
 # Before check: svelte-check against stale types proves nothing about the current spec.
 step openapi:generate openapi_types_match_spec
-step check pnpm check
-step test:unit pnpm test:unit
+step check "$PM" run check
+step test:unit "$PM" run test:unit
 
 echo "check.sh: all steps passed"

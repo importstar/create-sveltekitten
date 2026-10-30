@@ -13,7 +13,8 @@ pnpm test     # tsc, then vitest over test/ (runs the built dist/)
 Run the CLI locally:
 ```bash
 node dist/index.js            # scaffold (interactive)
-node dist/index.js --name demo --template ssr --mode fullstack --yes   # scaffold, no prompts
+node dist/index.js --name demo --template ssr --mode fullstack --pm pnpm --yes   # scaffold, no prompts
+# --yes without --pm selects bun. --pm bun|pnpm overrides detection (npm_config_user_agent).
 node dist/index.js patch      # patch an existing project
 node dist/index.js patch --mode fullstack   # same, for an SSR project whose .sveltekitten.json has no ssrMode
 ```

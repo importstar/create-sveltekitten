@@ -14,6 +14,7 @@ const PROMPTS = [
 	'Template',
 	'Backend architecture for SSR',
 	'BACKEND_API_URL (API base URL)',
+	'Package manager',
 	'PUBLIC_API_URL (backend base URL)',
 	'already exists. Overwrite?'
 ];
@@ -31,21 +32,21 @@ const read = (file: string) => readFileSync(join(cwd, file), 'utf-8');
 describe('scaffold with every flag and --yes', () => {
 	it.each([
 		{
-			args: ['--template', 'ssr', '--mode', 'fullstack'],
+			args: ['--template', 'ssr', '--mode', 'fullstack', '--pm', 'pnpm'],
 			env: 'PUBLIC_APP_TITLE=demo\nDATABASE_URL=sqlite.db\n',
-			config: { version, template: 'ssr', ssrMode: 'fullstack' },
+			config: { version, template: 'ssr', ssrMode: 'fullstack', packageManager: 'pnpm' },
 			fullstackOverlay: true
 		},
 		{
-			args: ['--template', 'ssr', '--mode', 'openapi', '--backend-url', 'http://api.test:8000'],
+			args: ['--template', 'ssr', '--mode', 'openapi', '--pm', 'pnpm', '--backend-url', 'http://api.test:8000'],
 			env: 'PUBLIC_APP_TITLE=demo\nBACKEND_API_URL=http://api.test:8000\n',
-			config: { version, template: 'ssr', ssrMode: 'openapi' },
+			config: { version, template: 'ssr', ssrMode: 'openapi', packageManager: 'pnpm' },
 			fullstackOverlay: false
 		},
 		{
-			args: ['--template', 'spa', '--backend-url', 'http://api.test:8000'],
+			args: ['--template', 'spa', '--pm', 'pnpm', '--backend-url', 'http://api.test:8000'],
 			env: 'PUBLIC_APP_TITLE=demo\nPUBLIC_API_URL=http://api.test:8000\n',
-			config: { version, template: 'spa' },
+			config: { version, template: 'spa', packageManager: 'pnpm' },
 			fullstackOverlay: false
 		}
 	])('$config.template $config.ssrMode', ({ args, env, config, fullstackOverlay }) => {
@@ -67,7 +68,7 @@ describe('scaffold with every flag and --yes', () => {
 	});
 
 	it('defaults --backend-url to http://localhost:9000', () => {
-		const result = runCli(cwd, ['--name', 'demo', '--template', 'spa', '--yes']);
+		const result = runCli(cwd, ['--name', 'demo', '--template', 'spa', '--pm', 'pnpm', '--yes']);
 		expect(result.status, result.output).toBe(0);
 		expect(read('demo/.env')).toBe('PUBLIC_APP_TITLE=demo\nPUBLIC_API_URL=http://localhost:9000\n');
 	});
@@ -98,7 +99,7 @@ describe.each([
 	}
 ])('ssr $mode contains only its own mode', ({ mode, present, absent, dependencies, noDependencies, noScripts }) => {
 	it('files, dependencies and scripts', () => {
-		const result = runCli(cwd, ['--name', 'demo', '--template', 'ssr', '--mode', mode, '--yes']);
+		const result = runCli(cwd, ['--name', 'demo', '--template', 'ssr', '--mode', mode, '--pm', 'pnpm', '--yes']);
 		expect(result.status, result.output).toBe(0);
 
 		for (const file of present) expect(existsSync(join(cwd, 'demo', file)), file).toBe(true);
@@ -111,7 +112,8 @@ describe.each([
 		expect(Object.keys(pkg.scripts).filter((s) => noScripts.test(s))).toEqual([]);
 
 		// The lockfile must list exactly this mode's dependencies, or install --frozen-lockfile fails.
-		const importer = read('demo/pnpm-lock.yaml').split(/^packages:$/m)[0];
+		// pnpm 10 may prepend a packageManagerDependencies document before the importer.
+		const importer = (read('demo/pnpm-lock.yaml').split(/^---$/m).at(-1) ?? '').split(/^packages:$/m)[0];
 		const locked = [...importer.matchAll(/^ {6}'?([^'\s]+?)'?:$/gm)].map((m) => m[1]);
 		expect(locked.sort()).toEqual(deps.sort());
 	});
@@ -151,11 +153,23 @@ describe('flag errors exit non-zero', () => {
 
 describe('missing flags without --yes', () => {
 	it('prompts only for the missing value', () => {
-		const result = runCli(cwd, ['--name', 'demo', '--template', 'spa']);
+		const result = runCli(cwd, ['--name', 'demo', '--template', 'spa', '--pm', 'pnpm']);
 
 		expect(result.timedOut).toBe(false);
 		expect(result.output).toContain('PUBLIC_API_URL (backend base URL)');
+		expect(result.output).not.toContain('Package manager');
 		expect(result.output).not.toContain('Project name');
 		expect(result.output).not.toContain('Template');
+	});
+
+	it('--yes without --pm selects bun and drops the pnpm lockfile', () => {
+		const result = runCli(cwd, ['--name', 'demo', '--template', 'spa', '--yes']);
+
+		expect(result.status, result.output).toBe(0);
+		expect(JSON.parse(read('demo/.sveltekitten.json')).packageManager).toBe('bun');
+		expect(existsSync(join(cwd, 'demo/pnpm-lock.yaml'))).toBe(false);
+		expect(existsSync(join(cwd, 'demo/bun.lock'))).toBe(true);
+		expect(read('demo/agent-role.md')).toContain('bun lint');
+		expect(read('demo/agent-role.md')).not.toContain('pnpm lint');
 	});
 });

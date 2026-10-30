@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import * as p from '@clack/prompts';
 import { cp, mkdir, readFile, writeFile, readdir, rename, unlink } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 import { parseArgs, styleText } from 'node:util';
 import { patch } from './patch.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -25,7 +26,12 @@ async function walkDir(dir) {
     const entries = await readdir(dir, { withFileTypes: true });
     const files = [];
     for (const entry of entries) {
+        if (entry.name === 'node_modules')
+            continue;
         const fullPath = join(dir, entry.name);
+        // A symlink (CLAUDE.md → AGENTS.md, or a node_modules link) must stay a link.
+        if (entry.isSymbolicLink())
+            continue;
         if (entry.isDirectory()) {
             files.push(...(await walkDir(fullPath)));
         }
@@ -53,7 +59,7 @@ const NO_REPLACEMENT_DIRS = ['src/libs/api-specs/'];
 async function applyReplacements(targetDir, replacements) {
     const textExts = new Set([
         '.ts', '.svelte', '.js', '.json', '.css', '.html', '.md', '.env',
-        '.prettierrc', '.gitignore', '.eslintrc', '.d.ts'
+        '.prettierrc', '.gitignore', '.eslintrc', '.d.ts', '.lock'
     ]);
     const files = await walkDir(targetDir);
     for (const file of files) {
@@ -76,7 +82,8 @@ async function applyReplacements(targetDir, replacements) {
 }
 const TEMPLATES = ['ssr', 'spa'];
 const SSR_MODES = ['fullstack', 'openapi'];
-const SCAFFOLD_USAGE = 'Usage: create-sveltekitten [--name <name>] [--template ssr|spa] [--mode fullstack|openapi] [--backend-url <url>] [--yes]';
+const PACKAGE_MANAGERS = ['bun', 'pnpm'];
+const SCAFFOLD_USAGE = 'Usage: create-sveltekitten [--name <name>] [--template ssr|spa] [--mode fullstack|openapi] [--pm bun|pnpm] [--backend-url <url>] [--yes]';
 const DEFAULT_BACKEND_URL = 'http://localhost:9000';
 function fail(message) {
     p.log.error(message, { output: process.stderr });
@@ -100,6 +107,7 @@ function parseFlags(args) {
                 name: { type: 'string' },
                 template: { type: 'string' },
                 mode: { type: 'string' },
+                pm: { type: 'string' },
                 'backend-url': { type: 'string' },
                 yes: { type: 'boolean' }
             },
@@ -118,6 +126,7 @@ function parseFlags(args) {
         fail('--name must not be empty.');
     const template = oneOf('--template', values.template, TEMPLATES);
     const mode = oneOf('--mode', values.mode, SSR_MODES);
+    const pm = oneOf('--pm', values.pm, PACKAGE_MANAGERS);
     if (mode && template === 'spa')
         fail('--mode only applies to --template ssr.');
     const yes = values.yes ?? false;
@@ -129,7 +138,93 @@ function parseFlags(args) {
         if (template === 'ssr' && !mode)
             fail(`--yes with --template ssr needs --mode (${SSR_MODES.join(' or ')}).`);
     }
-    return { name, template, mode, backendUrl: values['backend-url'], yes };
+    return { name, template, mode, pm, backendUrl: values['backend-url'], yes };
+}
+/** `bun/1.2.0` and `pnpm/10.0.0 ...` come from npm_config_user_agent. Anything else is unknown. */
+function packageManagerFromUserAgent(userAgent = process.env.npm_config_user_agent) {
+    const name = userAgent?.split('/')[0];
+    if (name === 'bun' || name === 'pnpm')
+        return name;
+    return undefined;
+}
+async function resolvePackageManager(flag, yes) {
+    if (flag)
+        return flag;
+    const detected = packageManagerFromUserAgent();
+    if (detected)
+        return detected;
+    if (yes)
+        return 'bun';
+    const answer = await p.select({
+        message: 'Package manager',
+        initialValue: 'bun',
+        options: [
+            { value: 'bun', label: 'bun', hint: 'default' },
+            { value: 'pnpm', label: 'pnpm' }
+        ]
+    });
+    if (p.isCancel(answer)) {
+        p.cancel('Cancelled.');
+        process.exit(0);
+    }
+    return answer;
+}
+function packageManagerSpec(pm, targetDir) {
+    if (pm === 'pnpm') {
+        try {
+            const lock = readFileSync(join(targetDir, 'pnpm-lock.yaml'), 'utf8');
+            const specifier = lock.match(/packageManagerDependencies:\n {2}pnpm:\n {4}specifier: ([^\n]+)/);
+            if (specifier)
+                return `pnpm@${specifier[1].trim()}`;
+        }
+        catch {
+            // No pnpm lockfile in this project.
+        }
+    }
+    try {
+        const version = execFileSync(pm, ['--version'], { encoding: 'utf8' }).trim();
+        if (version)
+            return `${pm}@${version}`;
+    }
+    catch {
+        // The binary is not on PATH; record the name without a version.
+    }
+    return pm;
+}
+const LOCKFILES = { bun: 'bun.lock', pnpm: 'pnpm-lock.yaml' };
+/** Whole word `pnpm`, so `pnpm-lock.yaml` is left alone. */
+const PNPM_WORD = /(?<![\w-])pnpm(?![\w-])/g;
+function shouldRewritePackageManager(relPath) {
+    if (relPath.startsWith('src/libs/api-specs/'))
+        return false;
+    if (relPath === 'scripts/check.sh')
+        return false;
+    const base = relPath.split('/').pop() ?? '';
+    return base !== 'pnpm-lock.yaml' && base !== 'bun.lock' && base !== 'pnpm-workspace.yaml';
+}
+/** Template text stays pnpm-canonical. A bun scaffold rewrites that word in place. */
+async function rewritePnpmCommands(targetDir) {
+    for (const file of await walkDir(targetDir)) {
+        const rel = relative(targetDir, file).split(sep).join('/');
+        if (!shouldRewritePackageManager(rel))
+            continue;
+        const basename = file.split('/').pop() ?? '';
+        const isText = ['.ts', '.svelte', '.js', '.json', '.css', '.html', '.md', '.sh'].includes('.' + (file.split('.').pop() ?? '')) ||
+            basename.startsWith('.') ||
+            !file.includes('.');
+        if (!isText)
+            continue;
+        const content = await readFile(file, 'utf-8');
+        const next = content.replace(PNPM_WORD, 'bun');
+        if (next !== content)
+            await writeFile(file, next);
+    }
+}
+async function recordPackageManager(targetDir, pm) {
+    const pkgPath = join(targetDir, 'package.json');
+    const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
+    pkg.packageManager = packageManagerSpec(pm, targetDir);
+    await writeFile(pkgPath, JSON.stringify(pkg, null, '\t') + '\n');
 }
 async function main(flags) {
     const version = await getVersion();
@@ -172,6 +267,7 @@ async function main(flags) {
     }
     if (flags.mode && template === 'spa')
         fail('--mode only applies to --template ssr.');
+    const packageManager = await resolvePackageManager(flags.pm, flags.yes);
     let ssrMode;
     let backendUrl = flags.backendUrl ?? DEFAULT_BACKEND_URL;
     if (template === 'ssr') {
@@ -253,6 +349,10 @@ async function main(flags) {
             '{{BACKEND_URL}}': backendUrl
         };
         await applyReplacements(targetDir, replacements);
+        if (packageManager === 'bun')
+            await rewritePnpmCommands(targetDir);
+        await unlink(join(targetDir, packageManager === 'bun' ? 'pnpm-lock.yaml' : 'bun.lock')).catch(() => undefined);
+        await recordPackageManager(targetDir, packageManager);
         const envLines = template === 'spa'
             ? `PUBLIC_APP_TITLE=${projectName}\nPUBLIC_API_URL=${backendUrl}\n`
             : ssrMode === 'fullstack'
@@ -262,7 +362,8 @@ async function main(flags) {
         await writeFile(join(targetDir, '.sveltekitten.json'), JSON.stringify({
             version: await getVersion(),
             template,
-            ...(ssrMode ? { ssrMode } : {})
+            ...(ssrMode ? { ssrMode } : {}),
+            packageManager
         }, null, '\t') + '\n');
         spinner.stop('Project scaffolded!');
     }
@@ -271,30 +372,31 @@ async function main(flags) {
         p.log.error(String(err));
         process.exit(1);
     }
+    const pm = packageManager;
     if (template === 'ssr' && ssrMode === 'fullstack') {
         p.note([
             `cd ${projectName}`,
-            'pnpm install',
-            'pnpm user:create admin',
-            'pnpm dev'
+            `${pm} install`,
+            `${pm} user:create admin`,
+            `${pm} dev`
         ].join('\n'), 'Next steps', dimNote);
         p.note([
             'Manage database schema & data:',
-            '  pnpm db:push    # push schema changes to sqlite.db',
-            '  pnpm db:studio  # open Drizzle Studio in browser',
-            '  pnpm db:generate # generate SQL migrations'
+            `  ${pm} db:push    # push schema changes to sqlite.db`,
+            `  ${pm} db:studio  # open Drizzle Studio in browser`,
+            `  ${pm} db:generate # generate SQL migrations`
         ].join('\n'), 'Database', dimNote);
     }
     else {
-        p.note([`cd ${projectName}`, `pnpm install`, `pnpm dev`].join('\n'), 'Next steps', dimNote);
+        p.note([`cd ${projectName}`, `${pm} install`, `${pm} dev`].join('\n'), 'Next steps', dimNote);
     }
     if (template === 'ssr' && ssrMode === 'openapi') {
         p.note([
             'Fetch latest spec and regenerate types:',
-            '  pnpm openapi:update',
+            `  ${pm} openapi:update`,
             '',
             'Or regenerate from committed spec only:',
-            '  pnpm openapi:generate'
+            `  ${pm} openapi:generate`
         ].join('\n'), 'API types', dimNote);
     }
     p.outro('Happy coding!');
