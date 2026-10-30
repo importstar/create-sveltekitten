@@ -3,6 +3,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
+import { linkClaudeMd } from './claude-md.js';
 import { getApplicableCodemods } from './codemods/index.js';
 import type { Codemod } from './codemods/index.js';
 import { applyCodemods, findLeftovers, isSourceFile, type ProjectConfig } from './codemods/apply.js';
@@ -200,6 +201,8 @@ export async function patch(latestVersion: string, args: string[] = []) {
 	// Always update version after running applicable codemods
 	const updated: ProjectConfig = { ...config, version: latestVersion };
 	await writeFile(configPath, JSON.stringify(updated, null, '\t') + '\n');
+
+	if (await linkClaudeMd(process.cwd())) p.log.info('Linked CLAUDE.md → AGENTS.md.');
 
 	await printFollowUps(applicable);
 

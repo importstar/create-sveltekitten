@@ -94,9 +94,11 @@ function variantsFor(list, fromCommit) {
 		variants.unshift({ template: 'ssr' });
 		return variants;
 	}
+	const tagged = [...new Set(ssr.map((t) => t.ssrMode).filter(Boolean))];
+	// Transforms without ssrMode apply to every mode. Prefer openapi over the historical fastapi name.
 	const modes = ssr.every((t) => t.ssrMode)
-		? [...new Set(ssr.map((t) => t.ssrMode))]
-		: ['fullstack', 'fastapi'];
+		? tagged
+		: [...new Set([...tagged, 'fullstack', 'openapi'])];
 	variants.unshift(...modes.sort().reverse().map((ssrMode) => ({ template: 'ssr', ssrMode })));
 	return variants;
 }

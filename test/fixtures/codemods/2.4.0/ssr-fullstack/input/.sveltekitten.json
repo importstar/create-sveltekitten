@@ -1,0 +1,5 @@
+{
+	"version": "2.3.0",
+	"template": "ssr",
+	"ssrMode": "fullstack"
+}

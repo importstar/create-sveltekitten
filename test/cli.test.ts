@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, readlinkSync } from 'node:fs';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -61,6 +61,11 @@ describe('scaffold with every flag and --yes', () => {
 		expect(JSON.parse(read('demo/.sveltekitten.json'))).toEqual(config);
 		expect(JSON.parse(read('demo/package.json')).name).toBe('demo');
 		expect(existsSync(join(cwd, 'demo/.gitignore'))).toBe(true);
+		expect(existsSync(join(cwd, 'demo/agent-role.md'))).toBe(false);
+		expect(lstatSync(join(cwd, 'demo/CLAUDE.md')).isSymbolicLink()).toBe(true);
+		expect(readlinkSync(join(cwd, 'demo/CLAUDE.md'))).toBe('AGENTS.md');
+		expect(read('demo/CLAUDE.md')).toBe(read('demo/AGENTS.md'));
+		expect(read('demo/AGENTS.md')).not.toContain('agent-role.md');
 		expect(existsSync(join(cwd, 'demo/scripts/user-create.ts'))).toBe(fullstackOverlay);
 		expect(JSON.parse(read('demo/package.json')).scripts['user:create'] !== undefined).toBe(
 			fullstackOverlay
@@ -169,7 +174,7 @@ describe('missing flags without --yes', () => {
 		expect(JSON.parse(read('demo/.sveltekitten.json')).packageManager).toBe('bun');
 		expect(existsSync(join(cwd, 'demo/pnpm-lock.yaml'))).toBe(false);
 		expect(existsSync(join(cwd, 'demo/bun.lock'))).toBe(true);
-		expect(read('demo/agent-role.md')).toContain('bun lint');
-		expect(read('demo/agent-role.md')).not.toContain('pnpm lint');
+		expect(read('demo/AGENTS.md')).toContain('bun lint');
+		expect(read('demo/AGENTS.md')).not.toContain('pnpm lint');
 	});
 });

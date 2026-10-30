@@ -1,8 +1,111 @@
 # Agent Instructions — SPA Template
 
-## Start Here
+You are a frontend subagent working on a SvelteKit web application built from the **sveltekitten** SPA template. Your job is to implement, modify, and debug frontend features while respecting the conventions of this template.
 
-Before doing any work, read `agent-role.md` in this directory. It contains the full project context: tech stack, auth pattern, feature structure, key constraints, and a new-feature checklist.
+## Tech Stack
+
+- **SvelteKit v3** + **Svelte 5** (runes mode) + **Vite 8**, deployed via `@sveltejs/adapter-static`
+- **TypeScript** throughout
+- **Tailwind CSS v4** (via `@tailwindcss/vite` plugin — no separate config file)
+- **bits-ui** as the headless primitive layer; shadcn-style components in `src/lib/components/ui/`
+- **TanStack Query** (`@tanstack/svelte-query`) for client-side data fetching & mutations — `QueryClientProvider` is wired in the root layout
+- **Superforms + Zod** for forms
+- **openapi-fetch** typed against `src/lib/api/openapi.d.ts` for backend calls
+- **svelte-sonner** for toast notifications (placed in root layout)
+
+## What You Can Do
+
+- Add new routes under `src/routes/` using SvelteKit file-based routing
+- Add pages that require authentication inside the `(protected)` route group — the auth guard runs automatically via `+layout.ts`
+- Build UI components in `src/lib/components/ui/` following the existing `component.svelte` + `index.ts` pattern
+- Add new features under `src/lib/features/<feature-name>/` with `api.ts`, `queries.ts`, `schema.ts`, and `components/`
+- Call backend APIs through the typed `client` from `#lib/api/client.js` — uses `openapi-fetch` with `PUBLIC_API_URL`
+- Use `fetchWithAuth` from `#lib/api/auth-interceptor.js` for authenticated requests with automatic token refresh
+- Use `authStore` from `#lib/stores/auth.svelte.js` for client-side auth state
+
+## Feature Structure Pattern
+
+Every domain feature is completely self-contained in `src/lib/features/<feature-name>/`:
+
+```text
+src/lib/features/<feature-name>/
+├── schema.ts           # Zod schemas (input validation) & inferred TypeScript types
+├── contract.ts         # Interface for the feature's API surface (e.g. `ItemsApi`)
+├── contract.test.ts    # Runs the shared contract suite (testing/items-api-contract.ts) against every implementation
+├── api.ts              # Typed API calls via client (or mock fallback) — implements contract.ts
+├── context.ts          # createContext for the contract: set<Feature>Api() / use<Feature>Api() (falls back to api.ts)
+├── queries.ts          # TanStack Query key factory + use<Query>/use<Mutation> hooks, reading the contract implementation from context
+├── testing/            # Fake ItemsApi and the shared contract suite
+├── components/         # Feature-specific Svelte 5 components
+└── index.ts            # Public barrel export
+```
+
+**Why `contract.ts`?** `queries.ts` depends on the `contract.ts` interface instead of importing `api.ts` directly (dependency inversion). The implementation is provided through context: the root layout (`src/routes/+layout.svelte`) calls `setItemsApi(itemsApi)`, and each hook defaults to it, e.g. `useItems(initialDataGetter?, itemsApi: ItemsApi = useItemsApi())`. A test or component harness calls `setItemsApi(createFakeItemsApi())` to run a whole component tree against a fake, or passes an implementation to a single hook — no change to `queries.ts` either way.
+
+The contract is more than the type: e.g. `toggleItem` must resolve with the full persisted item, failures reject with a readable `Error`. `testing/items-api-contract.ts` spells those promises out as tests, and `contract.test.ts` runs them against every implementation — including the fake in `testing/fake-items-api.ts`, so a test double can't drift from the real thing.
+
+### Canonical Reference Example
+
+- `src/lib/features/items/` — Reference CRUD feature demonstrating schemas, the `ItemsApi` contract, an in-memory mock implementation, query key factories, mutations with cache invalidation, and toasts.
+- `src/routes/(protected)/items/` — Client-side route demonstrating reactive TanStack Query state handling.
+
+### How to Erase / Replace the Example Feature
+
+1. Delete the feature: `rm -rf src/lib/features/items`
+2. Delete the route: `rm -rf src/routes/(protected)/items`
+3. Remove the `<a href="/items">Items</a>` link in `src/routes/(protected)/+layout.svelte`.
+
+## Key Constraints
+
+- **SPA mode — no server-side load functions** — all data fetching is client-side via TanStack Query
+- **Auth is client-side** — `authStore` saves its state, access token included, to `localStorage` (`auth_state`) so it survives a reload; refresh token is in an httpOnly cookie
+- **XSS can steal the access token** — any script injected into the page can read `localStorage`, so never render untrusted HTML with `{@html}`.
+- **Protected pages must live inside `(protected)/`** — the layout guard calls `requireAuth()` automatically
+- **Svelte 5 runes only** — no legacy Svelte 4 syntax. See the table below.
+- **Imports from `src/lib` use `#lib` with the file extension** — e.g. `import { cn } from '#lib/utils/shadcn.js'`, `#lib/components/ui/button/index.js`. SvelteKit 3 resolves `#lib` through the `imports` field in `package.json`. Configuration (adapter, preprocess) is passed to `sveltekit({ ... })` in `vite.config.ts`; there is no `svelte.config.js`. Environment variables are declared in `src/env.ts` and imported from `$app/env/public` / `$app/env/private`.
+- **No logger** — a SPA has no server, so it has no pino or OpenTelemetry setup (the SSR modes do); show failures to the user (toast, error page) and log on the backend.
+- **Run `svelte-autofixer` before finalizing any `.svelte` file**:
+  ```bash
+  npx @sveltejs/mcp svelte-autofixer ./src/path/to/Component.svelte
+  ```
+- **Before merging, `bash scripts/check.sh` must pass**: it runs `pnpm lint`, `pnpm check` and `pnpm test:unit` in order and stops at the first failing step, which it names.
+- **E2E**: `pnpm test:e2e` installs the browser Playwright needs on first run (network required once), then builds and runs `e2e/`.
+
+## Svelte 5 Quick Reference
+
+| Avoid                             | Use                        |
+| --------------------------------- | -------------------------- |
+| `let x = 0` (implicit reactivity) | `$state`                   |
+| `$:` reactive statements          | `$derived` / `$effect`     |
+| `export let`                      | `$props`                   |
+| `on:click`                        | `onclick`                  |
+| `<slot>`                          | `{#snippet}` + `{@render}` |
+| `<svelte:component this={X}>`     | `<X>`                      |
+| `use:action`                      | `{@attach}`                |
+| Svelte stores for shared state    | class with `$state` fields |
+
+- Use `$state.raw` for large API response objects (avoids deep proxy overhead)
+- Derive computed values with `$derived`; never compute inside `$effect`
+- Always key `{#each}` blocks — never use array index as key
+- Use `createContext` (not `setContext`/`getContext`) for type-safe context
+
+## Adding a New Feature — Checklist
+
+1. **Schema**: Create `src/lib/features/your-feature/schema.ts` with Zod validation schemas and exported types.
+2. **Contract**: Create `src/lib/features/your-feature/contract.ts` with an interface describing the feature's API surface. Add `contract.test.ts` that runs the contract suite (see `testing/items-api-contract.ts`) against every implementation, including a fake in `testing/`.
+3. **API**: Create `src/lib/features/your-feature/api.ts` with typed endpoint functions implementing the `contract.ts` interface.
+4. **Queries**: Create `src/lib/features/your-feature/queries.ts` with query key factory and custom query/mutation hooks, each taking the contract implementation as an optional parameter that defaults to `useYourFeatureApi()` from `context.ts`. Provide the real implementation once in `src/routes/+layout.svelte` with `setYourFeatureApi(yourFeatureApi)`.
+5. **Components**: Build UI in `src/lib/features/your-feature/components/` using primitives from `src/lib/components/ui/` and `toast` from `svelte-sonner`.
+6. **Route**: Create `src/routes/(protected)/your-feature/+page.svelte`.
+7. **Navigation**: Add route link in `src/routes/(protected)/+layout.svelte`.
+8. **Validate**: Run `npx @sveltejs/mcp svelte-autofixer` on `.svelte` files and verify with `bash scripts/check.sh`.
+
+## Out of Scope
+
+- Adding server-side load functions or `+page.server.ts` files (this is a static SPA)
+- Modifying the auth interceptor token refresh logic in `src/lib/api/auth-interceptor.ts`
+- Changing cookie names or TTLs in `src/lib/utils/auth.ts`
+- Regenerating OpenAPI types (`pnpm openapi` — do this only if the task explicitly requires it)
 
 ## Available Skills
 
@@ -36,12 +139,6 @@ You MUST run this on every `.svelte` file before delivering it. Keep calling unt
 Generates a Svelte Playground link.
 Only call after user confirms they want one. NEVER call if code was written to project files.
 
-## SPA-Specific Notes
+---
 
-- This is a **static SPA**: `ssr = false`, `prerender = true` — no `+page.server.ts` or server-only code
-- Auth is **client-side**: `authStore` (`src/lib/stores/auth.svelte.ts`) saves its state, access token included, to `localStorage` (`auth_state`) so it survives a reload; refresh token lives in an httpOnly cookie
-- **XSS can steal the access token**: any script injected into the page can read `localStorage`, so never render untrusted HTML with `{@html}`.
-- Protected pages go inside `src/routes/(protected)/` — the auth guard runs automatically via `+layout.ts`
-- API calls go directly to `PUBLIC_API_URL` via the typed `client` (`src/lib/api/client.ts`) — the auth header is injected automatically by middleware
-- New features belong in `src/lib/features/<name>/` with `api.ts`, `queries.ts`, `schema.ts`, `components/`
-- Never add `console.log` — use toast notifications for user feedback
+`CLAUDE.md` is a symlink to this file, so tools that read `CLAUDE.md` get these same instructions. Edit this file.

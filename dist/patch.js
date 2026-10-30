@@ -3,6 +3,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
+import { linkClaudeMd } from './claude-md.js';
 import { getApplicableCodemods } from './codemods/index.js';
 import { applyCodemods, findLeftovers, isSourceFile } from './codemods/apply.js';
 const SSR_MODES = ['fullstack', 'openapi'];
@@ -176,6 +177,8 @@ export async function patch(latestVersion, args = []) {
     // Always update version after running applicable codemods
     const updated = { ...config, version: latestVersion };
     await writeFile(configPath, JSON.stringify(updated, null, '\t') + '\n');
+    if (await linkClaudeMd(process.cwd()))
+        p.log.info('Linked CLAUDE.md → AGENTS.md.');
     await printFollowUps(applicable);
     p.outro(`Patched to ${latestVersion}. Commit .sveltekitten.json and changed files.`);
 }

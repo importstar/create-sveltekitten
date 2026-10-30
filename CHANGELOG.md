@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.4.0
+
+**One instructions file per project.** `agent-role.md` is gone. Its contents now live in `AGENTS.md`, together with the skills and Svelte MCP notes that file already carried. `CLAUDE.md` is a symlink to `AGENTS.md`, so Claude Code and tools that read `AGENTS.md` see the same text. Edit `AGENTS.md`.
+
+`patch` deletes `agent-role.md` when it is still the 2.3.0 file, rewrites `AGENTS.md` the same way, and points the logging comment in `.env.example` at `AGENTS.md`. A file you edited is left alone with a warning. After writing, `patch` creates `CLAUDE.md` → `AGENTS.md` when `CLAUDE.md` is absent, and leaves a `CLAUDE.md` you already have.
+
+```bash
+pnpx create-sveltekitten patch
+```
+
 ## 2.3.0
 
 **New projects can use bun or pnpm.** `--pm bun|pnpm` wins. Otherwise the CLI reads `npm_config_user_agent`. `--yes` with no signal selects bun. The choice is stored as `packageManager` in `.sveltekitten.json`. A bun scaffold rewrites the word `pnpm` in project text (not lockfiles, `scripts/check.sh`, or `src/libs/api-specs/`) and drops `pnpm-lock.yaml`. A pnpm scaffold drops `bun.lock`.

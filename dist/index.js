@@ -6,6 +6,7 @@ import { join, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { parseArgs, styleText } from 'node:util';
+import { linkClaudeMd } from './claude-md.js';
 import { patch } from './patch.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = join(__dirname, '../templates');
@@ -29,7 +30,7 @@ async function walkDir(dir) {
         if (entry.name === 'node_modules')
             continue;
         const fullPath = join(dir, entry.name);
-        // A symlink (CLAUDE.md → AGENTS.md, or a node_modules link) must stay a link.
+        // A symlink (CLAUDE.md → AGENTS.md) must stay a link. writeFile would replace it with a regular file.
         if (entry.isSymbolicLink())
             continue;
         if (entry.isDirectory()) {
@@ -338,10 +339,12 @@ async function main(flags) {
         await mkdir(targetDir, { recursive: true });
         // SSR is the shared templates/ssr plus the chosen mode's overlay, templates/ssr-<mode>,
         // which adds that mode's code, package.json and lockfile.
+        // verbatimSymlinks keeps CLAUDE.md → AGENTS.md relative. The default rewrites it to an absolute path in this package.
+        const copy = { recursive: true, force: true, verbatimSymlinks: true };
         const templateDir = join(TEMPLATES_DIR, template);
-        await cp(templateDir, targetDir, { recursive: true, force: true });
+        await cp(templateDir, targetDir, copy);
         if (template === 'ssr') {
-            await cp(join(TEMPLATES_DIR, `ssr-${ssrMode}`), targetDir, { recursive: true, force: true });
+            await cp(join(TEMPLATES_DIR, `ssr-${ssrMode}`), targetDir, copy);
         }
         await materializeGitignore(targetDir);
         const replacements = {
@@ -353,6 +356,7 @@ async function main(flags) {
             await rewritePnpmCommands(targetDir);
         await unlink(join(targetDir, packageManager === 'bun' ? 'pnpm-lock.yaml' : 'bun.lock')).catch(() => undefined);
         await recordPackageManager(targetDir, packageManager);
+        await linkClaudeMd(targetDir);
         const envLines = template === 'spa'
             ? `PUBLIC_APP_TITLE=${projectName}\nPUBLIC_API_URL=${backendUrl}\n`
             : ssrMode === 'fullstack'
