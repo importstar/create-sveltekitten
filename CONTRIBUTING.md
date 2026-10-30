@@ -11,7 +11,7 @@ src/
 templates/
   ssr/              — SSR files shared by both modes
   ssr-fullstack/    — overlay copied over ssr/ when ssrMode is fullstack
-  ssr-fastapi/      — overlay copied over ssr/ when ssrMode is fastapi (BFF)
+  ssr-openapi/      — overlay copied over ssr/ when ssrMode is openapi (BFF)
   spa/              — SPA template files
 ```
 
@@ -27,7 +27,7 @@ Every generated project contains `.sveltekitten.json`:
 }
 ```
 
-`ssrMode` (`fullstack` or `fastapi`) is set for every SSR project; codemods can target one mode with `ssrMode`.
+`ssrMode` (`fullstack` or `openapi`) is set for every SSR project; codemods can target one mode with `ssrMode`. Historical codemods tagged `fastapi` still apply to `openapi`.
 
 This file is the source of truth for which template version a project was created from. The `patch` command uses it to determine which codemods to run.
 
@@ -47,7 +47,7 @@ Changes to this CLI's own source code (not template files) do not require a vers
 
 ### 1. Fix the template
 
-Edit the file under `templates/ssr/` (both SSR modes), `templates/ssr-fullstack/` or `templates/ssr-fastapi/` (one SSR mode), or `templates/spa/`.
+Edit the file under `templates/ssr/` (both SSR modes), `templates/ssr-fullstack/` or `templates/ssr-openapi/` (one SSR mode), or `templates/spa/`.
 
 ### 2. Write a codemod
 

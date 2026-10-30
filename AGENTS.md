@@ -33,7 +33,7 @@ src/
 templates/
   ssr/              — SSR files shared by both modes (UI, login form, items UI, e2e/login + items tests)
   ssr-fullstack/    — overlay for ssrMode fullstack: Drizzle/SQLite, session auth, items service, package.json + lockfile
-  ssr-fastapi/      — overlay for ssrMode fastapi (BFF): proxy, FastAPI client + spec, JWT cookies, package.json + lockfile
+  ssr-openapi/      — overlay for ssrMode openapi (BFF): proxy, API client + spec, JWT cookies, package.json + lockfile
   spa/              — SPA template
 dist/               — compiled output (committed, enables pnpx github: usage)
 scripts/make-codemod-fixture.mjs — writes codemod fixture inputs from git history
@@ -44,24 +44,24 @@ test/               — vitest: CLI, codemod fixtures (test/fixtures/codemods/<t
 
 Every scaffolded project receives a `.sveltekitten.json`:
 ```json
-{ "version": "1.0.0", "template": "ssr", "ssrMode": "fastapi" }
+{ "version": "1.0.0", "template": "ssr", "ssrMode": "openapi" }
 ```
 
-SSR projects always record `ssrMode` (`fullstack` or `fastapi`); SPA projects have none. An SSR scaffold is `templates/ssr/` with `templates/ssr-<ssrMode>/` copied over it, so each project has only its own mode's code and dependencies. `patch` asks for the mode (or takes `--mode`) when an older SSR project has no `ssrMode`, and saves it.
+SSR projects always record `ssrMode` (`fullstack` or `openapi`); SPA projects have none. An SSR scaffold is `templates/ssr/` with `templates/ssr-<ssrMode>/` copied over it, so each project has only its own mode's code and dependencies. `patch` asks for the mode (or takes `--mode`) when an older SSR project has no `ssrMode`, and saves it. `--mode fastapi` is rejected. A project whose `.sveltekitten.json` still says `"ssrMode": "fastapi"` must set it to `"openapi"` and run `patch` again; the engine then treats historical `fastapi` codemod tags as `openapi`.
 
 The version comes from `package.json` at scaffold time. The `patch` command uses it to select applicable codemods.
 
 ## Feature architecture convention (inside templates)
 
-Template features under `src/lib/features/<name>/` follow a layered pattern — `src/lib/features/items/` in each template is the canonical example, see `templates/ssr-fullstack/agent-role.md` / `templates/ssr-fastapi/agent-role.md` / `templates/spa/agent-role.md` for the full breakdown:
+Template features under `src/lib/features/<name>/` follow a layered pattern — `src/lib/features/items/` in each template is the canonical example, see `templates/ssr-fullstack/agent-role.md` / `templates/ssr-openapi/agent-role.md` / `templates/spa/agent-role.md` for the full breakdown:
 
 - Imports between files under `src/lib` use the `#lib` subpath import with the file extension (`#lib/features/items/api.js`); SvelteKit 3 has no `$lib`. Kit options live in `sveltekit({ ... })` in `vite.config.ts` (no `svelte.config.js`), env vars in `src/env.ts`.
 - `schema.ts` (Zod) → `contract.ts` (interface: what any implementation of the feature's API must do) → `api.ts` (implements the contract) → `context.ts` (`createContext` for the contract; the root layout provides the real implementation) → `queries.ts` (TanStack Query hooks, depend on the contract via an optional parameter defaulting to the context value, not on `api.ts` directly)
 - SSR full-stack features additionally split `server.ts` (Drizzle repository, no business rules) from `service.ts` (use-case layer with authorization — e.g. ownership checks). `service.ts` declares the repository interface it needs and exports a `create<Feature>Service(repo)` factory; `server.ts` implements the interface, and `src/lib/server/services.ts` (composition root) wires them. Route handlers (`src/routes/api/<feature>/+server.ts`) call the service from `#lib/server/services.js`, never `server.ts` directly. `service.test.ts` tests the rules against an in-memory repository under `testing/`.
-- SSR FastAPI (BFF) features have **no business rules in SvelteKit**: no `server.ts`, `service.ts` or database. `api.ts` calls FastAPI through `fastapiClient` (via `/api/proxy`), `dto.ts` maps FastAPI response types to the UI types, and `contract.test.ts` also runs the contract against the real `api.ts` over a fake FastAPI `fetch` in `testing/`. Rules belong in the FastAPI backend.
+- SSR OpenAPI (BFF) features have **no business rules in SvelteKit**: no `server.ts`, `service.ts` or database. `api.ts` calls the API described by the OpenAPI spec through `apiClient` (via `/api/proxy`), `dto.ts` maps response types to the UI types, and `contract.test.ts` also runs the contract against the real `api.ts` over a fake API `fetch` in `testing/`. Rules belong in that backend. Login is `POST /v1/auth/login` with `strategy: 'jwt'`.
 - SSR server code (both modes) logs through `#lib/server/logger.js` only (pino, server-only, `trace_id`/`span_id` on every line). The request line and unexpected errors are logged once by the hooks (`src/lib/hooks/request-log.ts`, `src/lib/hooks/handle-error.ts`), so feature code never logs them; it never logs secrets either. `src/instrumentation.server.ts` reads `OTEL_*` from `process.env` (not `$app/env/private`) because it runs before `Server.init()`. The SPA template has no logger. Details: "Logging and Tracing" in the SSR `agent-role.md` files.
 
-When this pattern changes, update it in three places together: the template files themselves, the `agent-role.md` of each affected template (`templates/ssr-fullstack/`, `templates/ssr-fastapi/`, `templates/spa/`), and this section.
+When this pattern changes, update it in three places together: the template files themselves, the `agent-role.md` of each affected template (`templates/ssr-fullstack/`, `templates/ssr-openapi/`, `templates/spa/`), and this section.
 
 ## Fixing a bug in a template file
 
@@ -69,7 +69,7 @@ Never change a template file without a matching codemod entry — existing proje
 
 You must always do all these steps — never skip any:
 
-1. **Edit** the file where it lives: `templates/ssr/` (shared by both SSR modes), `templates/ssr-fullstack/` or `templates/ssr-fastapi/` (one mode), or `templates/spa/`. For a file in a mode overlay, the codemod sets `ssrMode` to target only that mode. A dependency change goes into each mode's `package.json`, and that mode's `pnpm-lock.yaml` is regenerated (scaffold the mode, `pnpm install && pnpm dedupe`, copy the lockfile back) so `pnpm install --frozen-lockfile` keeps working.
+1. **Edit** the file where it lives: `templates/ssr/` (shared by both SSR modes), `templates/ssr-fullstack/` or `templates/ssr-openapi/` (one mode), or `templates/spa/`. For a file in a mode overlay, the codemod sets `ssrMode` to target only that mode. A dependency change goes into each mode's `package.json`, and that mode's `pnpm-lock.yaml` is regenerated (scaffold the mode, `pnpm install && pnpm dedupe`, copy the lockfile back) so `pnpm install --frozen-lockfile` keeps working.
 2. **Add a codemod** — an entry in the `codemods` array in `src/codemods/index.ts`, **at the end**, so existing projects can receive the fix, plus its fixture test (see Testing)
 3. **Bump the version** in `package.json` (`npm version patch` / `minor` / `major`)
 4. `pnpm build && pnpm test && npm publish`
@@ -84,7 +84,7 @@ You must always do all these steps — never skip any:
     {
       file: 'relative/path/from/project/root.ts',
       template: 'ssr',        // optional: 'ssr' | 'spa'
-      ssrMode: 'fullstack',   // optional: 'fullstack' | 'fastapi'
+      ssrMode: 'fullstack',   // optional: 'fullstack' | 'openapi' (historical codemods may say 'fastapi'; the engine treats that as openapi)
       transform: (content: string) => content.replaceAll('old', 'new'),
     },
   ],
@@ -113,7 +113,7 @@ No version bump needed unless the change affects `patch` behavior.
 pnpm test   # tsc && vitest run; CI runs the same after checking dist/
 ```
 
-Tests run the built `dist/`, the code users run. CI (`.github/workflows/ci.yml`) runs `pnpm build`, fails when `git diff --exit-code dist` shows a change (src edited without rebuilding and committing `dist/`), then `pnpm test`. A second job scaffolds every variant (SSR full-stack, SSR FastAPI, SPA) with the CLI flags and runs `pnpm install --frozen-lockfile`, `bash scripts/check.sh` (the template's own lint, check and unit tests, plus OpenAPI drift in FastAPI mode) and `pnpm build` in it, so a template change that breaks `pnpm lint` or `pnpm check` on a fresh project fails CI. Locally, `bash scripts/check.sh` and `pnpm test:e2e` in a fresh scaffold of the mode you changed cover the template itself.
+Tests run the built `dist/`, the code users run. CI (`.github/workflows/ci.yml`) runs `pnpm build`, fails when `git diff --exit-code dist` shows a change (src edited without rebuilding and committing `dist/`), then `pnpm test`. A second job scaffolds every variant (SSR full-stack, SSR OpenAPI, SPA) with the CLI flags and runs `pnpm install --frozen-lockfile`, `bash scripts/check.sh` (the template's own lint, check and unit tests, plus OpenAPI drift in openapi mode) and `pnpm build` in it, so a template change that breaks `pnpm lint` or `pnpm check` on a fresh project fails CI. Locally, `bash scripts/check.sh` and `pnpm test:e2e` in a fresh scaffold of the mode you changed cover the template itself.
 
 **Fixture test for a new codemod** (required: the suite fails for any codemod from 0.3.0 on without a fixture):
 

@@ -75,7 +75,8 @@ async function applyReplacements(targetDir, replacements) {
     }
 }
 const TEMPLATES = ['ssr', 'spa'];
-const SSR_MODES = ['fullstack', 'fastapi'];
+const SSR_MODES = ['fullstack', 'openapi'];
+const SCAFFOLD_USAGE = 'Usage: create-sveltekitten [--name <name>] [--template ssr|spa] [--mode fullstack|openapi] [--backend-url <url>] [--yes]';
 const DEFAULT_BACKEND_URL = 'http://localhost:9000';
 function fail(message) {
     p.log.error(message, { output: process.stderr });
@@ -107,7 +108,10 @@ function parseFlags(args) {
         }));
     }
     catch (err) {
-        fail(`${err.message}\nUsage: create-sveltekitten [--name <name>] [--template ssr|spa] [--mode fullstack|fastapi] [--backend-url <url>] [--yes]`);
+        fail(`${err.message}\n${SCAFFOLD_USAGE}`);
+    }
+    if (values.mode === 'fastapi') {
+        fail(`The SSR mode "fastapi" was renamed to "openapi".\n${SCAFFOLD_USAGE}`);
     }
     const name = values.name?.trim();
     if (values.name !== undefined && !name)
@@ -151,7 +155,7 @@ async function main(flags) {
                 {
                     value: 'ssr',
                     label: 'SSR',
-                    hint: `v${version} · adapter-node · full-stack (Drizzle SQLite) or FastAPI BFF`
+                    hint: `v${version} · adapter-node · full-stack (Drizzle SQLite) or OpenAPI BFF`
                 },
                 {
                     value: 'spa',
@@ -182,9 +186,9 @@ async function main(flags) {
                         hint: 'SQLite · Drizzle ORM · Server Actions · Local Database'
                     },
                     {
-                        value: 'fastapi',
-                        label: 'FastAPI Backend (BFF Proxy)',
-                        hint: 'OpenAPI client · /api/proxy/** · External Python API'
+                        value: 'openapi',
+                        label: 'OpenAPI Backend (BFF Proxy)',
+                        hint: 'OpenAPI client · /api/proxy/** · external API'
                     }
                 ]
             });
@@ -194,9 +198,9 @@ async function main(flags) {
             }
             ssrMode = mode;
         }
-        if (ssrMode === 'fastapi' && flags.backendUrl === undefined && !flags.yes) {
+        if (ssrMode === 'openapi' && flags.backendUrl === undefined && !flags.yes) {
             const url = await p.text({
-                message: 'BACKEND_API_URL (FastAPI base URL)',
+                message: 'BACKEND_API_URL (API base URL)',
                 placeholder: DEFAULT_BACKEND_URL,
                 initialValue: DEFAULT_BACKEND_URL
             });
@@ -284,13 +288,13 @@ async function main(flags) {
     else {
         p.note([`cd ${projectName}`, `pnpm install`, `pnpm dev`].join('\n'), 'Next steps', dimNote);
     }
-    if (template === 'ssr' && ssrMode === 'fastapi') {
+    if (template === 'ssr' && ssrMode === 'openapi') {
         p.note([
             'Fetch latest spec and regenerate types:',
             '  pnpm openapi:update',
             '',
             'Or regenerate from committed spec only:',
-            '  pnpm openapi:fastapi'
+            '  pnpm openapi:generate'
         ].join('\n'), 'API types', dimNote);
     }
     p.outro('Happy coding!');

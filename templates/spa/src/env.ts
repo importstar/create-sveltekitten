@@ -10,6 +10,6 @@ export const variables = defineEnvVars({
 	PUBLIC_API_URL: {
 		public: true,
 		static: true,
-		description: 'FastAPI base URL the browser calls'
+		description: 'API base URL the browser calls'
 	}
 });

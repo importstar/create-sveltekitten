@@ -7,8 +7,9 @@ import { getApplicableCodemods } from './codemods/index.js';
 import type { Codemod } from './codemods/index.js';
 import { applyCodemods, findLeftovers, isSourceFile, type ProjectConfig } from './codemods/apply.js';
 
-type SsrMode = NonNullable<ProjectConfig['ssrMode']>;
-const SSR_MODES: readonly SsrMode[] = ['fullstack', 'fastapi'];
+const SSR_MODES = ['fullstack', 'openapi'] as const;
+type SsrMode = (typeof SSR_MODES)[number];
+const PATCH_USAGE = 'Usage: create-sveltekitten patch [--mode fullstack|openapi]';
 
 function fail(message: string): never {
 	p.log.error(message, { output: process.stderr });
@@ -20,7 +21,10 @@ function parsePatchFlags(args: string[]): { mode?: SsrMode } {
 	try {
 		({ values } = parseArgs({ args, options: { mode: { type: 'string' } }, strict: true }));
 	} catch (err) {
-		fail(`${(err as Error).message}\nUsage: create-sveltekitten patch [--mode fullstack|fastapi]`);
+		fail(`${(err as Error).message}\n${PATCH_USAGE}`);
+	}
+	if (values.mode === 'fastapi') {
+		fail(`The SSR mode "fastapi" was renamed to "openapi".\n${PATCH_USAGE}`);
 	}
 	if (values.mode !== undefined && !(SSR_MODES as readonly string[]).includes(values.mode)) {
 		fail(`Invalid --mode "${values.mode}". Allowed: ${SSR_MODES.join(', ')}.`);
@@ -43,9 +47,9 @@ async function resolveSsrMode(flagMode: SsrMode | undefined): Promise<SsrMode> {
 				hint: 'logs in against the local SQLite database (session_id cookie)'
 			},
 			{
-				value: 'fastapi',
-				label: 'FastAPI Backend (BFF Proxy)',
-				hint: 'logs in through FastAPI (access_token / refresh_token cookies)'
+				value: 'openapi',
+				label: 'OpenAPI Backend (BFF Proxy)',
+				hint: 'logs in through the API (POST /v1/auth/login, access_token / refresh_token cookies)'
 			}
 		]
 	});
@@ -113,6 +117,11 @@ export async function patch(latestVersion: string, args: string[] = []) {
 
 	p.intro(`create-sveltekitten patch`);
 
+	if (config.ssrMode === 'fastapi') {
+		fail(
+			'This project\'s .sveltekitten.json has ssrMode "fastapi". That mode was renamed to "openapi". Set ssrMode to "openapi" and run patch again.'
+		);
+	}
 	if (flags.mode && template !== 'ssr') fail('--mode only applies to SSR projects.');
 	if (flags.mode && config.ssrMode && flags.mode !== config.ssrMode) {
 		fail(`This project's .sveltekitten.json already says ssrMode "${config.ssrMode}".`);

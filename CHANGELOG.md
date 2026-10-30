@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.2.0
+
+**The SSR BFF mode is `openapi`.** `--mode fastapi` is rejected on scaffold and on patch. A project whose `.sveltekitten.json` still says `"ssrMode": "fastapi"` is left unchanged: set it to `"openapi"` and run `patch` again. After that, codemods tagged `fastapi` and `openapi` both apply.
+
+The sample login contract is unchanged: `POST /v1/auth/login` with `strategy: 'jwt'`, `access_token` / `refresh_token` cookies, `Authorization: Bearer`, refresh on 401, and a JWT `exp` check in the BFF. The committed specs only change `info.title` to `API`. Hospital and pet paths stay.
+
+```bash
+pnpx create-sveltekitten patch
+```
+
 ## 2.1.1
 
 **Fix: `src/instrumentation.server.ts` reads `OTEL_*` from `process.env`.** That file runs before `Server.init()` populates `$app/env`, so imports from `$app/env/private` were `undefined` and `.replace` could throw (sveltejs/kit#14286). The vars stay declared in `src/env.ts`; only instrumentation switches to `process.env`.

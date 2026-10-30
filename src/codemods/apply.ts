@@ -3,7 +3,8 @@ import type { Codemod } from './index.js';
 export interface ProjectConfig {
 	version: string;
 	template: string;
-	ssrMode?: 'fullstack' | 'fastapi';
+	/** `fastapi` is the pre-2.2.0 name of `openapi`. `patch` refuses it; the engine still treats the two as one mode. */
+	ssrMode?: 'fullstack' | 'openapi' | 'fastapi';
 }
 
 export type TransformStatus = 'create' | 'modified' | 'unchanged' | 'skipped' | 'delete';
@@ -72,7 +73,7 @@ export async function applyCodemods(
 		log.push({ codemod, transforms });
 		for (const t of codemod.transforms) {
 			if (t.template && t.template !== config.template) continue;
-			if (t.ssrMode && t.ssrMode !== config.ssrMode) continue;
+			if (t.ssrMode && !ssrModeMatches(t.ssrMode, config.ssrMode)) continue;
 
 			let oldContent: string;
 			let firstEncounter = false;
@@ -134,6 +135,15 @@ export async function applyCodemods(
 	}
 
 	return { log, files: currentContent, deleted: [...deleted], changes, warnings };
+}
+
+/** `fastapi` and `openapi` are one BFF mode: a project recorded as either receives both tags. */
+const BFF_MODES = new Set(['fastapi', 'openapi']);
+
+function ssrModeMatches(transformMode: string, projectMode: string | undefined): boolean {
+	if (projectMode === undefined) return false;
+	if (transformMode === projectMode) return true;
+	return BFF_MODES.has(transformMode) && BFF_MODES.has(projectMode);
 }
 
 /** Source files `patch` scans for leftovers: Svelte components and JS/TS modules. */

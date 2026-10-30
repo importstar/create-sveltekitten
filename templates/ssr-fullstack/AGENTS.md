@@ -38,7 +38,7 @@ Only call after user confirms they want one. NEVER call if code was written to p
 
 ## SSR Full-Stack Notes
 
-This project is the **full-stack** mode of the SSR template: SvelteKit owns the data, the users and the business rules. There is no FastAPI backend, no `/api/proxy`, and no OpenAPI client.
+This project is the **full-stack** mode of the SSR template: SvelteKit owns the data, the users and the business rules. There is no separate API backend, no `/api/proxy`, and no OpenAPI client.
 
 - **Database**: SQLite via `better-sqlite3` + `drizzle-orm` in `src/lib/server/db/`.
 - **Database CLI**: `pnpm db:push` pushes schema changes to `sqlite.db`; `pnpm db:studio` inspects data.

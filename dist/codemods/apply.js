@@ -19,7 +19,7 @@ export async function applyCodemods(codemods, config, readFile) {
         for (const t of codemod.transforms) {
             if (t.template && t.template !== config.template)
                 continue;
-            if (t.ssrMode && t.ssrMode !== config.ssrMode)
+            if (t.ssrMode && !ssrModeMatches(t.ssrMode, config.ssrMode))
                 continue;
             let oldContent;
             let firstEncounter = false;
@@ -86,6 +86,15 @@ export async function applyCodemods(codemods, config, readFile) {
             changes.push({ file, content: '', isNew: false, delete: true });
     }
     return { log, files: currentContent, deleted: [...deleted], changes, warnings };
+}
+/** `fastapi` and `openapi` are one BFF mode: a project recorded as either receives both tags. */
+const BFF_MODES = new Set(['fastapi', 'openapi']);
+function ssrModeMatches(transformMode, projectMode) {
+    if (projectMode === undefined)
+        return false;
+    if (transformMode === projectMode)
+        return true;
+    return BFF_MODES.has(transformMode) && BFF_MODES.has(projectMode);
 }
 /** Source files `patch` scans for leftovers: Svelte components and JS/TS modules. */
 export const isSourceFile = (file) => /\.(svelte|[cm]?[jt]s)$/.test(file);

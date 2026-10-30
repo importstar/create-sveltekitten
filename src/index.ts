@@ -79,7 +79,9 @@ async function applyReplacements(targetDir: string, replacements: Record<string,
 }
 
 const TEMPLATES = ['ssr', 'spa'] as const;
-const SSR_MODES = ['fullstack', 'fastapi'] as const;
+const SSR_MODES = ['fullstack', 'openapi'] as const;
+const SCAFFOLD_USAGE =
+	'Usage: create-sveltekitten [--name <name>] [--template ssr|spa] [--mode fullstack|openapi] [--backend-url <url>] [--yes]';
 type Template = (typeof TEMPLATES)[number];
 type SsrMode = (typeof SSR_MODES)[number];
 const DEFAULT_BACKEND_URL = 'http://localhost:9000';
@@ -122,9 +124,10 @@ function parseFlags(args: string[]): ScaffoldFlags {
 			allowPositionals: false
 		}));
 	} catch (err) {
-		fail(
-			`${(err as Error).message}\nUsage: create-sveltekitten [--name <name>] [--template ssr|spa] [--mode fullstack|fastapi] [--backend-url <url>] [--yes]`
-		);
+		fail(`${(err as Error).message}\n${SCAFFOLD_USAGE}`);
+	}
+	if (values.mode === 'fastapi') {
+		fail(`The SSR mode "fastapi" was renamed to "openapi".\n${SCAFFOLD_USAGE}`);
 	}
 
 	const name = values.name?.trim();
@@ -169,7 +172,7 @@ async function main(flags: ScaffoldFlags) {
 				{
 					value: 'ssr',
 					label: 'SSR',
-					hint: `v${version} · adapter-node · full-stack (Drizzle SQLite) or FastAPI BFF`
+					hint: `v${version} · adapter-node · full-stack (Drizzle SQLite) or OpenAPI BFF`
 				},
 				{
 					value: 'spa',
@@ -201,9 +204,9 @@ async function main(flags: ScaffoldFlags) {
 						hint: 'SQLite · Drizzle ORM · Server Actions · Local Database'
 					},
 					{
-						value: 'fastapi',
-						label: 'FastAPI Backend (BFF Proxy)',
-						hint: 'OpenAPI client · /api/proxy/** · External Python API'
+						value: 'openapi',
+						label: 'OpenAPI Backend (BFF Proxy)',
+						hint: 'OpenAPI client · /api/proxy/** · external API'
 					}
 				]
 			});
@@ -214,9 +217,9 @@ async function main(flags: ScaffoldFlags) {
 			ssrMode = mode;
 		}
 
-		if (ssrMode === 'fastapi' && flags.backendUrl === undefined && !flags.yes) {
+		if (ssrMode === 'openapi' && flags.backendUrl === undefined && !flags.yes) {
 			const url = await p.text({
-				message: 'BACKEND_API_URL (FastAPI base URL)',
+				message: 'BACKEND_API_URL (API base URL)',
 				placeholder: DEFAULT_BACKEND_URL,
 				initialValue: DEFAULT_BACKEND_URL
 			});
@@ -334,14 +337,14 @@ async function main(flags: ScaffoldFlags) {
 		);
 	}
 
-	if (template === 'ssr' && ssrMode === 'fastapi') {
+	if (template === 'ssr' && ssrMode === 'openapi') {
 		p.note(
 			[
 				'Fetch latest spec and regenerate types:',
 				'  pnpm openapi:update',
 				'',
 				'Or regenerate from committed spec only:',
-				'  pnpm openapi:fastapi'
+				'  pnpm openapi:generate'
 			].join('\n'),
 			'API types',
 			dimNote

@@ -3,7 +3,7 @@ import type { paths } from './openapi';
 import { PUBLIC_API_URL } from '$app/env/public';
 import { authStore } from '#lib/stores/auth.svelte.js';
 
-export function createFastApiClient() {
+export function createApiClient() {
 	const client = createClient<paths>({
 		baseUrl: PUBLIC_API_URL
 	});
@@ -11,7 +11,7 @@ export function createFastApiClient() {
 	return client;
 }
 
-const client = createFastApiClient();
+const client = createApiClient();
 
 client.use({
 	async onRequest({ request }) {

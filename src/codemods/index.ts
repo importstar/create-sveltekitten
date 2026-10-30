@@ -39,6 +39,7 @@ import v1_1_4 from './v1.1.4.js';
 import v2_0_0 from './v2.0.0.js';
 import v2_1_0 from './v2.1.0.js';
 import v2_1_1 from './v2.1.1.js';
+import v2_2_0 from './v2.2.0.js';
 
 /**
  * What a transform returns: the new content, or the content plus warnings for the person
@@ -60,8 +61,8 @@ export interface FileTransform {
 	create?: boolean;
 	/** Restrict this transform to a specific template type. Skipped when template doesn't match. */
 	template?: 'ssr' | 'spa';
-	/** Restrict this transform to a specific SSR mode. Skipped when the project's ssrMode doesn't match (or is unset). */
-	ssrMode?: 'fullstack' | 'fastapi';
+	/** Restrict this transform to a specific SSR mode. Skipped when the project's ssrMode doesn't match (or is unset). `fastapi` and `openapi` match each other. */
+	ssrMode?: 'fullstack' | 'openapi' | 'fastapi';
 	/** Must be pure. Return warnings instead of silently leaving a file unchanged when the expected text is missing. */
 	transform: (content: string) => TransformResult;
 }
@@ -124,7 +125,8 @@ export const codemods: Codemod[] = [
 	v1_1_4,
 	v2_0_0,
 	v2_1_0,
-	v2_1_1
+	v2_1_1,
+	v2_2_0
 ];
 
 function parseVersion(v: string): [number, number, number] {

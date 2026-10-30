@@ -91,7 +91,7 @@
 		<Card>
 			<CardHeader>
 				<div class="flex items-center justify-between">
-					<CardTitle class="text-base">FastAPI Service Status</CardTitle>
+					<CardTitle class="text-base">API Service Status</CardTitle>
 					{#if healthQuery.isLoading}
 						<div class="h-2.5 w-2.5 animate-pulse rounded-full bg-muted"></div>
 					{:else if healthQuery.isError}

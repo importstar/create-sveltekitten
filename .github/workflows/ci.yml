@@ -23,7 +23,7 @@ jobs:
       - run: pnpm test
 
   # A fresh project of every template and mode must install from its own lockfile, pass its
-  # own scripts/check.sh (lint, OpenAPI drift in fastapi, check, unit tests) and build.
+  # own scripts/check.sh (lint, OpenAPI drift in openapi, check, unit tests) and build.
   scaffold:
     runs-on: ubuntu-latest
     strategy:
@@ -32,8 +32,8 @@ jobs:
         include:
           - variant: ssr-fullstack
             flags: --template ssr --mode fullstack
-          - variant: ssr-fastapi
-            flags: --template ssr --mode fastapi
+          - variant: ssr-openapi
+            flags: --template ssr --mode openapi
           - variant: spa
             flags: --template spa
     steps:

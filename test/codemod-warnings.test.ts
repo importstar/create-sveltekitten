@@ -64,7 +64,14 @@ describe('an edited file the codemod cannot patch', () => {
 		expect(run.changes.map((c) => c.file)).not.toContain(PROXY);
 	});
 
-	it('is printed by `patch`', () => {
+	it('is printed by `patch`', async () => {
+		// The stored mode is still the old name. patch refuses that until it is openapi,
+		// and then a fastapi-tagged codemod still runs.
+		const configPath = join(project, '.sveltekitten.json');
+		const config = JSON.parse(await readFile(configPath, 'utf-8'));
+		config.ssrMode = 'openapi';
+		await writeFile(configPath, JSON.stringify(config, null, '\t') + '\n');
+
 		// stdin is closed, so patch stops at its confirm prompt after the preview.
 		const result = runCli(project, ['patch']);
 

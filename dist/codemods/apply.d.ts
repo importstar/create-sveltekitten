@@ -2,7 +2,8 @@ import type { Codemod } from './index.js';
 export interface ProjectConfig {
     version: string;
     template: string;
-    ssrMode?: 'fullstack' | 'fastapi';
+    /** `fastapi` is the pre-2.2.0 name of `openapi`. `patch` refuses it; the engine still treats the two as one mode. */
+    ssrMode?: 'fullstack' | 'openapi' | 'fastapi';
 }
 export type TransformStatus = 'create' | 'modified' | 'unchanged' | 'skipped' | 'delete';
 export interface TransformLog {

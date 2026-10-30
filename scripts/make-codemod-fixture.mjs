@@ -82,7 +82,7 @@ function commitFor(version, { fallback }) {
 	return earlier && { ...earlier, exact: false };
 }
 
-/** Template variants a set of codemods targets: 'ssr', 'spa', 'ssr-fullstack', 'ssr-fastapi'. */
+/** Template variants a set of codemods targets: 'ssr', 'spa', 'ssr-fullstack', 'ssr-openapi' (older codemods: 'ssr-fastapi'). */
 function variantsFor(list, fromCommit) {
 	const transforms = list.flatMap((c) => c.transforms);
 	const variants = [];
@@ -106,6 +106,21 @@ const variantName = (v) => (v.ssrMode ? `${v.template}-${v.ssrMode}` : v.templat
 const applies = (t, v) =>
 	(!t.template || t.template === v.template) && (!t.ssrMode || t.ssrMode === v.ssrMode);
 
+/** BFF overlay directory names, preferred name first. Only one exists on a given commit. */
+function overlayDirs(ssrMode) {
+	if (ssrMode === 'openapi') return ['ssr-openapi', 'ssr-fastapi'];
+	if (ssrMode === 'fastapi') return ['ssr-fastapi', 'ssr-openapi'];
+	return [`ssr-${ssrMode}`];
+}
+
+function showOverlay(commit, ssrMode, file) {
+	for (const dir of overlayDirs(ssrMode)) {
+		const content = show(commit, `templates/${dir}/${file}`);
+		if (content !== undefined) return content;
+	}
+	return undefined;
+}
+
 /** The `.env` the CLI at `commit` writes, read from its `envLines` expression. */
 function envFile(commit, variant) {
 	const source = show(commit, 'src/index.ts') ?? '';
@@ -127,8 +142,9 @@ function envFile(commit, variant) {
 /** A file as a project scaffolded by the CLI at `commit` has it, or undefined. */
 function scaffoldedFile(commit, variant, file) {
 	if (file === '.env') return envFile(commit, variant);
-	// templates/ssr-<mode> overlays templates/ssr (ssr-fastapi exists from 1.0.0 on).
-	const fromOverlay = variant.ssrMode ? show(commit, `templates/ssr-${variant.ssrMode}/${file}`) : undefined;
+	// templates/ssr-<mode> overlays templates/ssr. The BFF overlay was templates/ssr-fastapi
+	// through 2.1.1 and templates/ssr-openapi from 2.2.0; a fixture may read one commit of each.
+	const fromOverlay = variant.ssrMode ? showOverlay(commit, variant.ssrMode, file) : undefined;
 	let content = fromOverlay ?? show(commit, `templates/${variant.template}/${file}`);
 	if (content === undefined) return undefined;
 	content = content

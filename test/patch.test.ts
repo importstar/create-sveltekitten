@@ -35,6 +35,14 @@ describe('ssrMode filter (issue #2, AC5)', () => {
 		const run = await applyCodemods([codemod], { version: '0.0.0', template: 'ssr' }, read);
 		expect([...run.files]).toEqual([['c.ts', 'any ssr']]);
 	});
+
+	it('applies a fastapi-tagged transform when the project ssrMode is openapi', async () => {
+		const run = await applyCodemods([codemod], { version: '0.0.0', template: 'ssr', ssrMode: 'openapi' }, read);
+		expect([...run.files]).toEqual([
+			['a.ts', 'fastapi'],
+			['c.ts', 'any ssr']
+		]);
+	});
 });
 
 describe('patch in an SSR project without ssrMode', () => {
@@ -69,10 +77,27 @@ describe('patch in an SSR project without ssrMode', () => {
 	});
 
 	it('rejects --mode that contradicts the recorded one', async () => {
-		await writeFile(configPath(), JSON.stringify({ version: '0.3.24', template: 'ssr', ssrMode: 'fastapi' }));
+		await writeFile(configPath(), JSON.stringify({ version: '0.3.24', template: 'ssr', ssrMode: 'openapi' }));
 		const result = runCli(project, ['patch', '--mode', 'fullstack']);
 
 		expect(result.status).toBe(1);
-		expect(result.stderr).toContain('already says ssrMode "fastapi"');
+		expect(result.stderr).toContain('already says ssrMode "openapi"');
+	});
+
+	it('refuses a project whose ssrMode is still fastapi', async () => {
+		await writeFile(configPath(), JSON.stringify({ version: '0.3.24', template: 'ssr', ssrMode: 'fastapi' }));
+		const result = runCli(project, ['patch']);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain('Set ssrMode to "openapi" and run patch again');
+		expect(await config()).toEqual({ version: '0.3.24', template: 'ssr', ssrMode: 'fastapi' });
+	});
+
+	it('rejects --mode fastapi', async () => {
+		const result = runCli(project, ['patch', '--mode', 'fastapi']);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain('renamed to "openapi"');
+		expect(await config()).toEqual({ version: '0.3.24', template: 'ssr' });
 	});
 });

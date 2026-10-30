@@ -13,7 +13,7 @@ const PROMPTS = [
 	'Project name',
 	'Template',
 	'Backend architecture for SSR',
-	'BACKEND_API_URL (FastAPI base URL)',
+	'BACKEND_API_URL (API base URL)',
 	'PUBLIC_API_URL (backend base URL)',
 	'already exists. Overwrite?'
 ];
@@ -37,9 +37,9 @@ describe('scaffold with every flag and --yes', () => {
 			fullstackOverlay: true
 		},
 		{
-			args: ['--template', 'ssr', '--mode', 'fastapi', '--backend-url', 'http://api.test:8000'],
+			args: ['--template', 'ssr', '--mode', 'openapi', '--backend-url', 'http://api.test:8000'],
 			env: 'PUBLIC_APP_TITLE=demo\nBACKEND_API_URL=http://api.test:8000\n',
-			config: { version, template: 'ssr', ssrMode: 'fastapi' },
+			config: { version, template: 'ssr', ssrMode: 'openapi' },
 			fullstackOverlay: false
 		},
 		{
@@ -83,14 +83,14 @@ describe.each([
 	{
 		mode: 'fullstack',
 		present: ['src/lib/server/db/index.ts', 'src/lib/server/auth/session.ts', 'drizzle.config.ts', 'src/lib/features/items/service.ts', 'pnpm-lock.yaml'],
-		absent: ['src/routes/api/proxy', 'src/lib/api/fastapi-client.ts', 'src/lib/hooks/fastapi.hook.ts', 'src/libs/api-specs', 'e2e/mock-api.js'],
+		absent: ['src/routes/api/proxy', 'src/lib/api/api-client.ts', 'src/lib/hooks/api-client.hook.ts', 'src/libs/api-specs', 'e2e/mock-api.js'],
 		dependencies: ['better-sqlite3', 'drizzle-orm'],
 		noDependencies: ['jsonwebtoken', '@types/jsonwebtoken', 'openapi-fetch', 'openapi-typescript'],
 		noScripts: /^openapi/
 	},
 	{
-		mode: 'fastapi',
-		present: ['src/routes/api/proxy/[...slug]/+server.ts', 'src/lib/api/fastapi-client.ts', 'src/libs/api-specs/fastapi.json', 'e2e/mock-api.js', 'pnpm-lock.yaml'],
+		mode: 'openapi',
+		present: ['src/routes/api/proxy/[...slug]/+server.ts', 'src/lib/api/api-client.ts', 'src/libs/api-specs/openapi.json', 'e2e/mock-api.js', 'pnpm-lock.yaml'],
 		absent: ['src/lib/server/db', 'src/lib/server/auth', 'drizzle.config.ts', 'src/lib/features/items/server.ts', 'src/lib/features/items/service.ts', 'src/routes/api/items', 'scripts/user-create.ts'],
 		dependencies: ['jsonwebtoken', 'openapi-fetch'],
 		noDependencies: ['better-sqlite3', '@types/better-sqlite3', 'drizzle-orm', 'drizzle-kit'],
@@ -133,11 +133,12 @@ describe('flag errors exit non-zero', () => {
 	it.each([
 		[['--name', 'demo', '--template', 'vue', '--yes'], 'Invalid --template "vue". Allowed: ssr, spa.'],
 		[['--template', 'vue'], 'Invalid --template "vue". Allowed: ssr, spa.'],
-		[['--name', 'demo', '--template', 'ssr', '--mode', 'django', '--yes'], 'Invalid --mode "django". Allowed: fullstack, fastapi.'],
-		[['--name', 'demo', '--template', 'spa', '--mode', 'fastapi', '--yes'], '--mode only applies to --template ssr.'],
+		[['--name', 'demo', '--template', 'ssr', '--mode', 'django', '--yes'], 'Invalid --mode "django". Allowed: fullstack, openapi.'],
+		[['--name', 'demo', '--template', 'ssr', '--mode', 'fastapi', '--yes'], 'The SSR mode "fastapi" was renamed to "openapi".'],
+		[['--name', 'demo', '--template', 'spa', '--mode', 'openapi', '--yes'], '--mode only applies to --template ssr.'],
 		[['--template', 'spa', '--yes'], '--yes needs --name.'],
 		[['--name', 'demo', '--yes'], '--yes needs --template (ssr or spa).'],
-		[['--name', 'demo', '--template', 'ssr', '--yes'], '--yes with --template ssr needs --mode (fullstack or fastapi).'],
+		[['--name', 'demo', '--template', 'ssr', '--yes'], '--yes with --template ssr needs --mode (fullstack or openapi).'],
 		[['--name', '  ', '--template', 'spa', '--yes'], '--name must not be empty.'],
 		[['--nmae', 'demo'], "Unknown option '--nmae'"]
 	])('%j', (args, message) => {

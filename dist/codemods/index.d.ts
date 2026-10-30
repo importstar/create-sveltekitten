@@ -15,8 +15,8 @@ export interface FileTransform {
     create?: boolean;
     /** Restrict this transform to a specific template type. Skipped when template doesn't match. */
     template?: 'ssr' | 'spa';
-    /** Restrict this transform to a specific SSR mode. Skipped when the project's ssrMode doesn't match (or is unset). */
-    ssrMode?: 'fullstack' | 'fastapi';
+    /** Restrict this transform to a specific SSR mode. Skipped when the project's ssrMode doesn't match (or is unset). `fastapi` and `openapi` match each other. */
+    ssrMode?: 'fullstack' | 'openapi' | 'fastapi';
     /** Must be pure. Return warnings instead of silently leaving a file unchanged when the expected text is missing. */
     transform: (content: string) => TransformResult;
 }

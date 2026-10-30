@@ -12,8 +12,8 @@ The CLI will prompt for:
 
 1. **Project name** — used as the folder name and `package.json` name
 2. **Template** — SSR or SPA (see below)
-3. **SSR mode** — full-stack (SQLite) or FastAPI BFF (SSR only)
-4. **Backend base URL** — default `http://localhost:9000` (SPA and SSR FastAPI)
+3. **SSR mode** — full-stack (SQLite) or OpenAPI BFF (SSR only)
+4. **Backend base URL** — default `http://localhost:9000` (SPA and SSR OpenAPI)
 
 Then run:
 
@@ -31,12 +31,12 @@ Pass any of these flags to skip its prompt; the CLI asks only for what is missin
 | --- | --- |
 | `--name <name>` | project folder and `package.json` name |
 | `--template <t>` | `ssr` or `spa` |
-| `--mode <m>` | `fullstack` or `fastapi` (SSR only) |
-| `--backend-url <url>` | backend base URL for SPA and SSR `fastapi`, default `http://localhost:9000` |
+| `--mode <m>` | `fullstack` or `openapi` (SSR only). `fastapi` is rejected. |
+| `--backend-url <url>` | backend base URL for SPA and SSR `openapi`, default `http://localhost:9000` |
 | `--yes` | never prompt: `--name`, `--template` and (for SSR) `--mode` are required, and an existing folder is an error instead of an overwrite |
 
 ```bash
-pnpx github:importstar/create-sveltekitten --name my-app --template ssr --mode fastapi --backend-url http://localhost:9000 --yes
+pnpx github:importstar/create-sveltekitten --name my-app --template ssr --mode openapi --backend-url http://localhost:9000 --yes
 ```
 
 Invalid or missing values exit with code 1 and say what is allowed.
@@ -47,13 +47,13 @@ Invalid or missing values exit with code 1 and say what is allowed.
 
 Server-side rendering via `adapter-node`. The CLI asks for one of two modes (`--mode`), and the project contains only that mode's code and dependencies.
 
-| What      | Full-stack (`--mode fullstack`)                      | FastAPI BFF (`--mode fastapi`)                                  |
+| What      | Full-stack (`--mode fullstack`)                      | OpenAPI BFF (`--mode openapi`)                                  |
 | --------- | ---------------------------------------------------- | --------------------------------------------------------------- |
 | Adapter   | `@sveltejs/adapter-node`                             | `@sveltejs/adapter-node`                                        |
-| Data      | SQLite via `better-sqlite3` + Drizzle ORM            | FastAPI, called through `/api/proxy/**` with `openapi-fetch`    |
-| Auth      | Server-side sessions (`session_id` cookie) in SQLite | FastAPI JWTs in httpOnly cookies; `/login` calls FastAPI only   |
-| Rules     | `service.ts` per feature, in SvelteKit               | In FastAPI only: no business rules in SvelteKit                 |
-| API types | —                                                    | `openapi-typescript` → `src/lib/api/paths/fastapi.d.ts`         |
+| Data      | SQLite via `better-sqlite3` + Drizzle ORM            | The API in the OpenAPI spec, through `/api/proxy/**` with `openapi-fetch` |
+| Auth      | Server-side sessions (`session_id` cookie) in SQLite | JWTs in httpOnly cookies; `/login` calls `POST /v1/auth/login`  |
+| Rules     | `service.ts` per feature, in SvelteKit               | In the API only: no business rules in SvelteKit                 |
+| API types | —                                                    | `openapi-typescript` → `src/lib/api/paths/openapi.d.ts`         |
 | Logger    | `pino` (server-only), JSON with trace ids            | `pino` (server-only), JSON with trace ids                       |
 | Tracing   | OpenTelemetry; exported only with `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry; exported only with `OTEL_EXPORTER_OTLP_ENDPOINT` |
 
@@ -64,7 +64,7 @@ Server-side rendering via `adapter-node`. The CLI asks for one of two modes (`--
 PUBLIC_APP_TITLE=my-app
 DATABASE_URL=sqlite.db
 
-# fastapi
+# openapi
 PUBLIC_APP_TITLE=my-app
 BACKEND_API_URL=http://localhost:9000
 ```
@@ -79,14 +79,14 @@ pnpm user:create admin
 
 In CI, pipe the password instead: `printf '%s\n' "$PASSWORD" | pnpm user:create admin`. The command exits 1 if the username already exists.
 
-**FastAPI BFF: after backend changes**, regenerate the OpenAPI types (they are also generated on `pnpm install`):
+**OpenAPI BFF: after backend changes**, regenerate the OpenAPI types (they are also generated on `pnpm install`):
 
 ```bash
 pnpm openapi:update    # fetch the spec from the backend, then regenerate
-pnpm openapi:fastapi   # regenerate from the committed src/libs/api-specs/fastapi.json
+pnpm openapi:generate  # regenerate from the committed src/libs/api-specs/openapi.json
 ```
 
-The items example calls `/v1/items` on FastAPI; the committed spec includes those endpoints, and `e2e/mock-api.js` serves them for `pnpm test:e2e`. Replace both with your backend's.
+The items example calls `/v1/items` on the API; the committed spec includes those endpoints, and `e2e/mock-api.js` serves them for `pnpm test:e2e`. Replace both with your backend's. Login stays `POST /v1/auth/login` with `strategy: 'jwt'`.
 
 **Projects created before 1.0.0** have both modes' files. See the 1.0.0 entry in `CHANGELOG.md` for what you can delete.
 
@@ -125,7 +125,7 @@ pnpm openapi
 - TailwindCSS 4
 - bits-ui · shadcn-svelte components
 - superforms + zod
-- openapi-fetch for type-safe API calls (SPA and SSR FastAPI)
+- openapi-fetch for type-safe API calls (SPA and SSR OpenAPI)
 - ESLint + Prettier
 
 ## Feature architecture
@@ -142,7 +142,7 @@ Every domain feature lives in `src/lib/features/<name>/`, structured so it stays
 | `queries.ts` | TanStack Query key factory + hooks, defaulting to the real port implementation but overridable (e.g. for tests) |
 | `components/` | Feature UI |
 
-`src/lib/features/items/` is the reference implementation of this pattern in every template. SSR full-stack additionally shows the `service.ts` layer enforcing per-item ownership before a route handler is allowed to mutate or delete it. SSR FastAPI has no `server.ts` or `service.ts`: `api.ts` calls FastAPI, which owns the rules, and `dto.ts` maps its responses to the UI types.
+`src/lib/features/items/` is the reference implementation of this pattern in every template. SSR full-stack additionally shows the `service.ts` layer enforcing per-item ownership before a route handler is allowed to mutate or delete it. SSR OpenAPI has no `server.ts` or `service.ts`: `api.ts` calls the API, which owns the rules, and `dto.ts` maps its responses to the UI types.
 
 ## Scripts
 
@@ -154,4 +154,4 @@ Every domain feature lives in `src/lib/features/<name>/`, structured so it stays
 | `pnpm lint` | Prettier + ESLint |
 | `pnpm format` | Auto-format |
 | `pnpm test:unit` | Vitest unit tests |
-| `bash scripts/check.sh` | Run before merging: `lint`, `check`, `test:unit` in order; stops at the first failing step and names it. SSR FastAPI adds a step after `lint` that fails when `src/lib/api/paths/fastapi.d.ts` is out of date with `src/libs/api-specs/fastapi.json` (fix: `pnpm openapi:fastapi`) |
+| `bash scripts/check.sh` | Run before merging: `lint`, `check`, `test:unit` in order; stops at the first failing step and names it. SSR OpenAPI adds a step after `lint` that fails when `src/lib/api/paths/openapi.d.ts` is out of date with `src/libs/api-specs/openapi.json` (fix: `pnpm openapi:generate`) |
